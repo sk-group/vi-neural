@@ -5,13 +5,11 @@
 </template>
 
 <script>
-    import HelloWorld from './components/HelloWorld';
     import Network from './components/Network';
 
     export default {
         name: 'App',
         components: {
-            HelloWorld,
             Network
         }
     }
