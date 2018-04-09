@@ -1,6 +1,6 @@
 # vi-neural
 
-> A Vue.js project
+> Výpočetní inteligence js project
 
 ## Build Setup
 
