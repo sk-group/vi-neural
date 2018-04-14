@@ -9,12 +9,12 @@
     let vis = require('../../node_modules/vis/index');
     let network = null;
     let dataGlobalDefault = {
-        "nodes": [
-            {"id": "0", "label": ""},
-            {"id": "1", "label": ""},
-            {"id": "2", "label": ""},
+        nodes: [
+            {id: "0", label: ""},
+            {id: "1", label: ""},
+            {id: "2", label: ""},
         ],
-        "edges": []
+        edges: []
     };
     let dataGlobal = JSON.parse(JSON.stringify(dataGlobalDefault));
 
@@ -58,8 +58,8 @@
 
                 for(let i = 0; i < this.configuration.inputs; i++){
                     dataGlobal.nodes.push({
-                        "id": "input-"+i,
-                        "label": "Input "+(i+1),
+                        id: "input-"+i,
+                        label: "Input "+(i+1),
                         fixed: true,
                         x: 0,
                         y: 100*i,
@@ -68,17 +68,18 @@
 
                     for(let y = 0; y < 3; y++){
                         dataGlobal.edges.push({
-                            "from": "input-"+i,
-                            "to": y,
-                            "id": getUid()
+                            from: "input-"+i,
+                            to: y,
+                            id: getUid(),
+                            arrows: "to"
                         });
                     }
                 }
 
                 for(let i = 0; i < this.configuration.outputs; i++){
                     dataGlobal.nodes.push({
-                        "id": "output-"+i,
-                        "label": "Output "+(i+1),
+                        id: "output-"+i,
+                        label: "Output "+(i+1),
                         fixed: true,
                         x: 700,
                         y: 100*i,
@@ -87,9 +88,10 @@
 
                     for(let y = 0; y < 3; y++){
                         dataGlobal.edges.push({
-                            "from": y,
-                            "to": "output-"+i,
-                            "id": getUid()
+                            from: y,
+                            to: "output-"+i,
+                            id: getUid(),
+                            arrows: "to"
                         });
                     }
                 }
@@ -116,11 +118,17 @@
                             })
                         },
                         addEdge: (data, callback) =>{
-                            callback(data);
-                            this.$emit('graph-change', {
-                                nodes: network.body.data.nodes.get(),
-                                edges: network.body.data.edges.get()
-                            })
+                            if(data.to.indexOf("input") > -1 || data.from.indexOf("output") > -1){
+                                callback(null);
+                            }else{
+                                data.arrows = "to";
+                                callback(data);
+
+                                this.$emit('graph-change', {
+                                    nodes: network.body.data.nodes.get(),
+                                    edges: network.body.data.edges.get()
+                                })
+                            }
                         },
                         editEdge: (data, callback) =>{
                             callback(data);
