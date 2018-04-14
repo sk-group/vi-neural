@@ -10,6 +10,7 @@
             <NetworkDesign
                     v-if="isVisible('design')"
                     :configuration="configuration"
+                    @graph-change="networkDesignChange"
             ></NetworkDesign>
             <Result
                     v-if="isVisible('result')"
@@ -114,6 +115,9 @@
             },
             isVisible(name){
                 return this.appFlow[name].active || process.env.NODE_ENV === 'development';
+            },
+            networkDesignChange(data){
+                console.log("Network: ", data)
             }
         }
     }
