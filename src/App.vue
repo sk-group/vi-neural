@@ -141,4 +141,8 @@
             margin-bottom: 5px;
         }
     }
+
+    .cursor-pointer{
+        cursor: pointer;
+    }
 </style>
