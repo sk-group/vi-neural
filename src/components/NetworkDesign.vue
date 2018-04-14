@@ -1,6 +1,16 @@
 <template>
     <div>
         <h1>Design network</h1>
+        <div class="text-center mb-3">
+            <span
+                    class="btn btn-primary"
+                    @click="generateInputOutput()"
+            >Generate again</span>
+            <span
+                    class="btn btn-primary"
+                    @click="generateInputOutput(true, true)"
+            >Clear</span>
+        </div>
         <div id="mynetwork"></div>
     </div>
 </template>
@@ -61,8 +71,15 @@
             this.draw();
         },
         methods: {
-            generateInputOutput(canDraw = true){
-                dataGlobal = JSON.parse(JSON.stringify(dataGlobalDefault));
+            generateInputOutput(canDraw = true, clearAll = false){
+                if(clearAll){
+                    dataGlobal = {
+                        nodes: [],
+                        edges: []
+                    }
+                }else{
+                    dataGlobal = JSON.parse(JSON.stringify(dataGlobalDefault));
+                }
 
                 for(let i = 0; i < this.configuration.inputs; i++){
                     dataGlobal.nodes.push({
