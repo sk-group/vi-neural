@@ -27,6 +27,7 @@
     import InputData from './components/InputData.vue';
     import NetworkDesign from './components/NetworkDesign.vue';
     import Result from './components/Result.vue';
+    import Normalizer from './lib/Normalizer';
 
     export default {
         name: 'App',
@@ -35,6 +36,17 @@
             InputData,
             NetworkDesign,
             Result
+        },
+        created() {
+            this.normalizeData();
+        },
+        watch: {
+            data: {
+                handler() {
+                    this.normalizeData();
+                },
+                deep: true
+            }
         },
         data(){
             return{
@@ -79,7 +91,8 @@
                         name: 'Výsledek'
                     }
                 },
-                networkDesign: null
+                networkDesign: null,
+                normalizer: null
             }
         },
         methods:{
@@ -121,6 +134,10 @@
             networkDesignChange(data){
                 this.networkDesign = data;
                 console.log("Network: ", this.networkDesign);
+            },
+            normalizeData() {
+                this.normalizer = new Normalizer(this.data);
+                this.normalizer.normalize();
             }
         }
     }

@@ -5,7 +5,7 @@
         <div class="mb">
             <button @click="learn">Learn</button>
         </div>
-        <div v-if="configuration.inputs == 2" class="canvas-container">
+        <div v-if="configuration.inputs == 2 && configuration.outputs == 1" class="canvas-container">
             <Axis />
             <Axis vertical="true"/>
             <canvas width="500" height="500" ref="canvas"></canvas>
@@ -16,11 +16,11 @@
             <table>
                 <tr>
                     <td v-for="j in result.input.length" style="width: 10px">
-                        {{ result.input[j - 1] }}
+                        {{ result.input[j - 1] }},
                     </td>
                     <td> => </td>
-                    <td v-for="j in result.output.length" style="width: 500px">
-                        {{ result.output[j - 1] }}
+                    <td v-for="j in result.output.length" style="width: 150px">
+                        {{ result.output[j - 1] }},
                     </td>
                 </tr>
             </table>
@@ -30,7 +30,7 @@
         <div>
             <table>
                 <td v-for="j in configuration.inputs">
-                    <input v-model.number="testData[j - 1]" type="number"/>
+                    <input v-model.number="testData[j - 1]" />
                 </td>
                 <td> => </td>
                 <td>{{ testResult }}</td>
@@ -61,9 +61,11 @@
         },
         mounted() {
             let canvas = this.$refs.canvas;
-            let ctx = canvas.getContext("2d");
-            ctx.fillStyle= "black";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            if(canvas) {
+                let ctx = canvas.getContext("2d");
+                ctx.fillStyle = "black";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
         },
         methods: {
             test() {
@@ -125,11 +127,11 @@
             learn() {
                 this.createNetwork();
 
-                let learningRate = 0.03;
+                let learningRate = 0.5;
 
                 this.iteration = 0;
                 let iterate = () => {
-                    for (let i = 0; i < 1000; i++) {
+                    for (let i = 0; i < 10; i++) {
                         for (let data of this.data) {
                             this.network.activate(data.input);
                             this.network.propagate(learningRate, data.output);
@@ -137,7 +139,7 @@
                         this.iteration++;
                     }
                 };
-                if (this.configuration.inputs === 2) {
+                if (this.configuration.inputs == 2 && this.configuration.outputs == 1) {
                     // run animation
                     let canvas = this.$refs.canvas;
                     let res = 5;

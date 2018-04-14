@@ -3,10 +3,6 @@
         <h1>Hi please add data</h1>
         <div>
             <div class="row text-left">
-                <!--<div class="form-group">-->
-                <!--<label for="hidden">Hidden layer</label>-->
-                <!--<input v-model.number="configuration.hidden" id="hidden" type="number"/>-->
-                <!--</div>-->
                 <div class="col-md-6">
                     <div class="form-group">
                         <label for="inputs">Input layer</label>
@@ -35,17 +31,19 @@
                 </li>
             </ul>
             <div v-if="tabs.image">
-                <div class="form-group">
-                    <label for="imageSelectOutput">Output</label>
-                    <input v-model.number="imageSelectOutput" id="imageSelectOutput" type="number" class="form-control" max="1"/>
-                </div>
-                <div class="image-select mx-auto" @click="addPoint" ref="imageSelect">
-                    <div class="image-inner">
+                <div v-if="configuration.inputs == 2 && configuration.outputs == 1">
+                    <div class="form-group">
+                        <label for="imageSelectOutput">Output</label>
+                        <input v-model.number="imageSelectOutput" id="imageSelectOutput" type="number" class="form-control" max="1"/>
+                    </div>
+                    <div class="image-select mx-auto" @click="addPoint" ref="imageSelect">
+                        <div class="image-inner">
                 <span v-for="(data, index) in data" class="point" :style="{
                     left: data.input[0] * 100 + '%',
                     top: data.input[1] * 100 +'%',
-                    backgroundColor: 'rgba(' + 255 * data.output[0] + ',' + 255 * data.output[0] + ',' + 255 * data.output[0] + ',1)' }"
+                    backgroundColor: 'rgba(' + Math.round(255 * data.output[0]) + ',' + Math.round(255 * data.output[0]) + ',' + Math.round(255 * data.output[0]) + ',1)' }"
                       @click="removePoint(index, $event)"></span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -62,12 +60,12 @@
                     <tr v-for="i in data.length">
                         <td>
                             <template v-for="j in configuration.inputs">
-                                {{j}}. input <input v-model.number="data[i - 1].input[j - 1]" type="number" class="form-control mb-1 form-control-sm"/><br>
+                                {{j}}. input <input v-model.number="data[i - 1].input[j - 1]" class="form-control mb-1 form-control-sm"/><br>
                             </template>
                         </td>
                         <td>
                             <template v-for="j in configuration.outputs">
-                                {{j}}. output <input v-model.number="data[i - 1].output[j - 1]" type="number" class="form-control mb-1 form-control-sm"/><br>
+                                {{j}}. output <input v-model.number="data[i - 1].output[j - 1]" class="form-control mb-1 form-control-sm"/><br>
                             </template>
                         </td>
                         <td class="text-right">
@@ -97,6 +95,26 @@
                     custom: false
                 },
                 imageSelectOutput: 0
+            }
+        },
+        watch: {
+            configuration: {
+                handler(val) {
+                    if(val.inputs != 2 || val.outputs != 1) {
+                        this.setActiveTab('custom');
+                    }
+                    for(let data of this.data) {
+                        for(let i = val.inputs; i < data.input.length; i++) {
+                            data.input.splice(val.inputs, 1);
+                        }
+                    }
+                    for(let data of this.data) {
+                        for(let i = val.outputs; i < data.output.length; i++) {
+                            data.output.splice(val.outputs, 1);
+                        }
+                    }
+                },
+                deep: true
             }
         },
         methods: {
