@@ -16,6 +16,7 @@
                     v-if="isVisible('result')"
                     :configuration="configuration"
                     :data="data"
+                    :networkDesign="networkDesign"
             ></Result>
         </div>
     </div>
@@ -78,6 +79,7 @@
                         name: 'Výsledek'
                     }
                 },
+                networkDesign: null
             }
         },
         methods:{
@@ -117,7 +119,8 @@
                 return this.appFlow[name].active || process.env.NODE_ENV === 'development';
             },
             networkDesignChange(data){
-                console.log("Network: ", data)
+                this.networkDesign = data;
+                console.log("Network: ", this.networkDesign);
             }
         }
     }

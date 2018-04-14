@@ -43,15 +43,15 @@ export default class NetworkDesign{
 
 class Edge{
     constructor(id, from, to){
-        this.id = id;
-        this.from = from;
-        this.to = to;
+        this.id = id.toString();
+        this.from = from.toString();
+        this.to = to.toString();
     }
 }
 
 class Node{
     constructor(id, label = ""){
-        this.id = id;
+        this.id = id.toString();
         this.label = label;
     }
 }
