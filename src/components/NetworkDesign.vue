@@ -6,6 +6,8 @@
 </template>
 
 <script>
+    import NetworkDesign from "../lib/NetworkDesign";
+
     let vis = require('../../node_modules/vis/index');
     let network = null;
     let dataGlobalDefault = {
@@ -37,9 +39,15 @@
 
     export default {
         name: "NetworkDesign",
-        props: ['configuration', 'test'],
+        props: ['configuration'],
+        data(){
+            return{
+                design: null
+            }
+        },
         created(){
             this.generateInputOutput(false);
+            this.design = new NetworkDesign();
         },
         watch:{
             configuration: {
@@ -112,10 +120,10 @@
                         addNode: (data, callback) =>{
                             data.label = "";
                             callback(data);
-                            this.$emit('graph-change', {
+                            this.emmitData({
                                 nodes: network.body.data.nodes.get(),
                                 edges: network.body.data.edges.get()
-                            })
+                            });
                         },
                         addEdge: (data, callback) =>{
                             if(data.to.indexOf("input") > -1 || data.from.indexOf("output") > -1){
@@ -124,33 +132,38 @@
                                 data.arrows = "to";
                                 callback(data);
 
-                                this.$emit('graph-change', {
+                                this.emmitData({
                                     nodes: network.body.data.nodes.get(),
                                     edges: network.body.data.edges.get()
-                                })
+                                });
                             }
                         },
                         editEdge: (data, callback) =>{
                             callback(data);
-                            this.$emit('graph-change', {
+                            this.emmitData({
                                 nodes: network.body.data.nodes.get(),
                                 edges: network.body.data.edges.get()
-                            })
+                            });
                         },
                         deleteNode: (nodeData,callback) =>{
                             if(nodeData.nodes[0].indexOf("input") > -1 ||  nodeData.nodes[0].indexOf("output") > -1){
                                 callback(null);
                             }else{
                                 callback(nodeData);
-                                this.$emit('graph-change', {
+                                this.emmitData({
                                     nodes: network.body.data.nodes.get(),
                                     edges: network.body.data.edges.get()
-                                })
+                                });
                             }
                         }
                     }
                 };
                 network = new vis.Network(container, dataGlobal, options);
+            },
+            emmitData(data){
+                this.design.setEdges(data.edges);
+                this.design.setNodes(data.nodes);
+                this.$emit('graph-change', this.design);
             }
         }
     }
