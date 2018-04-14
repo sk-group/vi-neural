@@ -168,6 +168,14 @@
                                 });
                             }
                         },
+                        deleteEdge: (data, callback) =>{
+                            callback(data);
+
+                            this.emmitData({
+                                nodes: network.body.data.nodes.get(),
+                                edges: network.body.data.edges.get()
+                            });
+                        },
                         deleteNode: (nodeData,callback) =>{
                             if(nodeData.nodes[0].indexOf("input") > -1 ||  nodeData.nodes[0].indexOf("output") > -1){
                                 callback(null);
@@ -182,6 +190,10 @@
                     }
                 };
                 network = new vis.Network(container, dataGlobal, options);
+                this.emmitData({
+                    nodes: network.body.data.nodes.get(),
+                    edges: network.body.data.edges.get()
+                });
             },
             emmitData(data){
                 this.design.setEdges(data.edges);
