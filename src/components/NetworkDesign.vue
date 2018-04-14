@@ -139,11 +139,17 @@
                             }
                         },
                         editEdge: (data, callback) =>{
-                            callback(data);
-                            this.emmitData({
-                                nodes: network.body.data.nodes.get(),
-                                edges: network.body.data.edges.get()
-                            });
+                            if(data.to.indexOf("input") > -1 || data.from.indexOf("output") > -1){
+                                callback(null);
+                            }else{
+                                data.arrows = "to";
+                                callback(data);
+
+                                this.emmitData({
+                                    nodes: network.body.data.nodes.get(),
+                                    edges: network.body.data.edges.get()
+                                });
+                            }
                         },
                         deleteNode: (nodeData,callback) =>{
                             if(nodeData.nodes[0].indexOf("input") > -1 ||  nodeData.nodes[0].indexOf("output") > -1){
