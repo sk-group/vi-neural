@@ -1,9 +1,7 @@
 <template>
     <div>
+        <hr />
         <h1>Design network</h1>
-        <div class="mb">
-            <button @click="$emit('start-learn')">Learn</button>
-        </div>
     </div>
 </template>
 
