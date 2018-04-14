@@ -5,8 +5,12 @@
         <div class="mb">
             <button @click="learn">Learn</button>
         </div>
-        <div v-if="configuration.inputs == 2">
-            <canvas width="200" height="200" ref="canvas"></canvas>
+        <div v-if="configuration.inputs == 2" class="canvas-container">
+            <Axis />
+            <Axis vertical="true"/>
+            <canvas width="500" height="500" ref="canvas"></canvas>
+            <Axis bottom="true" />
+            <Axis vertical="true" bottom="true" />
         </div>
         <div v-else v-for="result in results">
             <table>
@@ -37,11 +41,15 @@
 </template>
 
 <script>
+    import Axis from './Axis.vue';
     let synaptic = require('synaptic');
 
     export default {
         name: "Result",
         props: ['configuration', 'data', 'networkDesign'],
+        components: {
+            Axis
+        },
         data() {
             return {
                 network: null,
@@ -50,6 +58,12 @@
                 testResult: null,
                 results: [],
             }
+        },
+        mounted() {
+            let canvas = this.$refs.canvas;
+            let ctx = canvas.getContext("2d");
+            ctx.fillStyle= "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
         },
         methods: {
             test() {
@@ -111,11 +125,11 @@
             learn() {
                 this.createNetwork();
 
-                let learningRate = 0.5;
+                let learningRate = 0.03;
 
                 this.iteration = 0;
                 let iterate = () => {
-                    for (let i = 0; i < 10; i++) {
+                    for (let i = 0; i < 1000; i++) {
                         for (let data of this.data) {
                             this.network.activate(data.input);
                             this.network.propagate(learningRate, data.output);
@@ -125,16 +139,17 @@
                 };
                 if (this.configuration.inputs === 2) {
                     // run animation
-                    let size = 200;
+                    let canvas = this.$refs.canvas;
                     let res = 5;
-                    let ctx = this.$refs.canvas.getContext("2d");
+                    let ctx = canvas.getContext("2d");
                     let draw = () => {
                         iterate();
-                        ctx.clearRect(0, 0, size, size);
-                        for (let x = 0; x <= size; x += res) {
-                            for (let y = 0; y <= size; y += res) {
-                                let alpha = this.network.activate([x / size, y / size]);
-                                ctx.fillStyle = 'rgba(0, 0, 0, ' + alpha + ')';
+                        ctx.fillStyle= "black";
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        for (let x = 0; x <= canvas.width; x += res) {
+                            for (let y = 0; y <= canvas.height; y += res) {
+                                let alpha = this.network.activate([x / canvas.width, y / canvas.height]);
+                                ctx.fillStyle = 'rgba(255, 255, 255, ' + alpha + ')';
                                 ctx.fillRect(x, y, res, res);
                             }
                         }
@@ -166,3 +181,17 @@
         }
     }
 </script>
+
+<style scoped lang="scss">
+    .canvas-container {
+        position: relative;
+        margin: 0 auto;
+        width: 540px;
+        height: 540px;
+        padding: 20px;
+
+        canvas {
+            transform: scaleY(-1);
+        }
+    }
+</style>

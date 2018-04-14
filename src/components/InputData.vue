@@ -35,9 +35,19 @@
                 </li>
             </ul>
             <div v-if="tabs.image">
-            <div class="image-select mx-auto" @click="addPoint">
-                <span v-for="point in imagePoints" class="point" :class="[point.color]" :style="{left: point.left+'%', top: point.top+'%'}"></span>
-            </div>
+                <div class="form-group">
+                    <label for="imageSelectOutput">Output</label>
+                    <input v-model.number="imageSelectOutput" id="imageSelectOutput" type="number" class="form-control" max="1"/>
+                </div>
+                <div class="image-select mx-auto" @click="addPoint" ref="imageSelect">
+                    <div class="image-inner">
+                <span v-for="(data, index) in data" class="point" :style="{
+                    left: data.input[0] * 100 + '%',
+                    top: data.input[1] * 100 +'%',
+                    backgroundColor: 'rgba(' + 255 * data.output[0] + ',' + 255 * data.output[0] + ',' + 255 * data.output[0] + ',1)' }"
+                      @click="removePoint(index, $event)"></span>
+                    </div>
+                </div>
             </div>
             <div v-if="tabs.custom">
                 <table class="table table-primary table-striped table-data">
@@ -80,16 +90,16 @@
     export default {
         name: "InputData",
         props: ['configuration', 'data'],
-        data(){
-            return{
+        data() {
+            return {
                 tabs: {
                     image: true,
                     custom: false
                 },
-                imagePoints: []
+                imageSelectOutput: 0
             }
         },
-        methods:{
+        methods: {
             addData() {
                 this.data.push({
                     input: [],
@@ -99,36 +109,65 @@
             removeData(index) {
                 this.data.splice(index, 1);
             },
-            setActiveTab(type){
-                for(let tab in this.tabs){
+            setActiveTab(type) {
+                for (let tab in this.tabs) {
                     this.tabs[tab] = false;
                 }
 
                 this.tabs[type] = true;
             },
-            addPoint(e){
-                console.log(e.screenX, e.screenY);
-                console.log(e.target.getBoundingClientRect());
+            addPoint(e) {
+                let imageSelect = this.$refs.imageSelect;
+                this.data.push({
+                    input: [
+                        e.offsetX / imageSelect.clientWidth,
+                        e.offsetY / imageSelect.clientHeight
+                    ],
+                    output: [
+                        this.imageSelectOutput
+                    ]
+                });
+            },
+            removePoint(index, e) {
+                e.stopPropagation();
+                this.data.splice(index, 1);
             }
         }
     }
 </script>
 
 <style lang="scss">
-    .table-data{
-        input{
+    .table-data {
+        input {
             width: 50%;
             display: inline-block;
         }
 
-        th{
+        th {
             color: #fff;
         }
     }
 
-    .image-select{
+    .image-select {
         width: 25vw;
         height: 25vw;
         border: 1px solid #ccc;
+        position: relative;
+        background: grey;
+
+        .image-inner {
+            height: 100%;
+            width: 100%;
+            transform: scaleY(-1);
+
+            .point {
+                width: 9px;
+                height: 9px;
+                margin-left: -4.5px;
+                margin-top: -4.5px;
+                position: absolute;
+                background-color: black;
+            }
+        }
     }
 </style>
