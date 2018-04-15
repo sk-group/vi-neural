@@ -1,17 +1,25 @@
 <template>
     <div>
-        <h1>Design network</h1>
+        <h1>Návrh sítě</h1>
         <div class="text-center mb-3">
             <span
                     class="btn btn-primary"
                     @click="generateInputOutput()"
-            >Generate again</span>
+            >Obnovit</span>
             <span
                     class="btn btn-primary"
                     @click="generateInputOutput(true, true)"
-            >Clear</span>
+            >Smazat vše</span>
         </div>
         <div id="mynetwork"></div>
+        <div class="text-right mt-3">
+                <span
+                        class="btn btn-success btn-lg cursor-pointer"
+                        @click="$emit('next')"
+                >
+                    Další krok
+                </span>
+        </div>
     </div>
 </template>
 
@@ -84,7 +92,7 @@
                 for(let i = 0; i < this.configuration.inputs; i++){
                     dataGlobal.nodes.push({
                         id: "input-"+i,
-                        label: "Input "+(i+1),
+                        label: "Vstup "+(i+1),
                         fixed: true,
                         x: 0,
                         y: 100*i,
@@ -104,7 +112,7 @@
                 for(let i = 0; i < this.configuration.outputs; i++){
                     dataGlobal.nodes.push({
                         id: "output-"+i,
-                        label: "Output "+(i+1),
+                        label: "Výstup "+(i+1),
                         fixed: true,
                         x: 700,
                         y: 100*i,

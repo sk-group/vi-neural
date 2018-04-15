@@ -1,8 +1,8 @@
 <template>
     <div>
-        <h1>Hi please add data</h1>
+        <h2>Nastavení sítě</h2>
         <div>
-            <div class="row text-left">
+            <div class="row text-left mb-5">
                 <div class="col-md-6">
                     <div class="form-group">
                         <label for="inputs">Input layer</label>
@@ -22,12 +22,13 @@
                     </div>
                 </div>
             </div>
-            <ul class="nav nav-tabs mt-5 mb-3">
+            <h2>Data pro síť</h2>
+            <ul class="nav nav-tabs mb-3 justify-content-center">
                 <li class="nav-item" @click="setActiveTab('image')">
-                    <span class="nav-link cursor-pointer" :class="{'active': tabs.image}">Data from image</span>
+                    <span class="nav-link cursor-pointer" :class="{'active': tabs.image}">Výběr z obrázku</span>
                 </li>
                 <li class="nav-item" @click="setActiveTab('custom')">
-                    <span class="nav-link cursor-pointer" :class="{'active': tabs.custom}">Custom data</span>
+                    <span class="nav-link cursor-pointer" :class="{'active': tabs.custom}">Vlastní data</span>
                 </li>
             </ul>
             <div v-if="tabs.image">
@@ -53,7 +54,7 @@
                     <tr class="bg-primary">
                         <th>Inputs</th>
                         <th>Outputs</th>
-                        <th></th>
+                        <th class="text-right"><button @click="addData()" class="btn btn-success btn-sm">+</button></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -69,14 +70,19 @@
                             </template>
                         </td>
                         <td class="text-right">
-                            <button @click="removeData(i - 1)" class="btn btn-danger">-</button>
+                            <button @click="removeData(i - 1)" class="btn btn-danger btn-sm">-</button>
                         </td>
                     </tr>
                     </tbody>
                 </table>
-                <div class="text-right mt-2 mb-3">
-                    <button @click="addData()" class="btn btn-success">+</button>
-                </div>
+            </div>
+            <div class="text-right mt-3">
+                <span
+                        class="btn btn-success btn-lg cursor-pointer"
+                        @click="$emit('next')"
+                >
+                    Další krok
+                </span>
             </div>
         </div>
     </div>

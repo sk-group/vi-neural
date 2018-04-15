@@ -3,11 +3,18 @@
 -->
 
 <template>
-    <div class="progress-tabs">
-        <nav class="navbar navbar-expand navbar-light p-0 justify-content-center">
-            <ul class="navbar-nav">
-                <li class="nav-item" v-bind:class="{'active': item.active, 'disabled': item.disabled}" v-on:click="setActual(key)" v-for="(item, key) in appFlow">
-                    <span class="nav-link">{{item.name}}</span>
+    <div class="container mb-5">
+        <nav>
+            <ul class="nav nav-pills nav-fill">
+                <li
+                        class="nav-item"
+                        @click="setActual(key)"
+                        v-for="(item, key) in appFlow"
+                >
+                    <span
+                            class="nav-link"
+                            :class="{'active': item.active, 'disabled': item.disabled, 'cursor-pointer': !item.disabled}"
+                    >{{item.name}}</span>
                 </li>
             </ul>
         </nav>
@@ -36,10 +43,18 @@
 
                     this.appFlow[sectionName].active = true;
 
+                    let findActive = false;
                     for(let section in this.appFlow){
                         if (!this.appFlow.hasOwnProperty(section))
                             continue;
-                        this.appFlow[section].disabled = false;
+
+                        if(!findActive){
+                            this.appFlow[section].disabled = false;
+                        }
+
+                        if(this.appFlow[section].active){
+                            findActive = true;
+                        }
                     }
                 }
             }

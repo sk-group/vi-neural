@@ -1,16 +1,18 @@
 <template>
     <div id="app">
         <Progress :appFlow="appFlow"></Progress>
-        <div class="container">
+        <div class="container pb-5">
             <InputData
                     v-if="isVisible('inputData')"
                     :configuration="configuration"
                     :data="data"
+                    @next="show('design')"
             ></InputData>
             <NetworkDesign
                     v-if="isVisible('design')"
                     :configuration="configuration"
                     @graph-change="networkDesignChange"
+                    @next="show('result')"
             ></NetworkDesign>
             <Result
                     v-if="isVisible('result')"
@@ -122,10 +124,18 @@
                 }
             },
             setDisabledProgress() {
+                let findActive = false;
                 for(let section in this.appFlow){
                     if (!this.appFlow.hasOwnProperty(section))
                         continue;
-                    this.appFlow[section].disabled = false;
+
+                    if(!findActive){
+                        this.appFlow[section].disabled = false;
+                    }
+
+                    if(this.appFlow[section].active){
+                        findActive = true;
+                    }
                 }
             },
             isVisible(name){
@@ -150,7 +160,7 @@
         font-family: 'Avenir', Helvetica, Arial, sans-serif;
         text-align: center;
         color: #2c3e50;
-        margin-top: 60px;
+        margin-top: 15px;
 
         table {
             margin: 0 auto;

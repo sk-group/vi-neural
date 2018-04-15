@@ -1,7 +1,6 @@
 <template>
     <div>
-        <hr/>
-        <h1>Nice result</h1>
+        <h1>Výsledek</h1>
         <div class="mb">
             <button @click="learn">Learn</button>
         </div>
