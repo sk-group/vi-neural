@@ -28,10 +28,10 @@ export default class Normalizer {
                     let min = this.metadata.output[i].min;
                     let max = this.metadata.output[i].max;
                     let minmax = (data.output[i] - min) / (max - min);
-                    input.push(minmax);
+                    output.push(minmax);
                 } else if (this.metadata.output[i].type === 'string') {
                     for(let binary of this.metadata.output[i].binarized[data.output[i]]) {
-                        input.push(binary);
+                        output.push(binary);
                     }
                 }
             }
@@ -51,6 +51,7 @@ export default class Normalizer {
     }
 
     getInputCount() {
+        console.log(this.normalizedData);
         return this.normalizedData[0].input.length;
     }
 

@@ -49,7 +49,7 @@
 
     export default {
         name: "NetworkDesign",
-        props: ['configuration'],
+        props: ['configuration', 'inputs', 'outputs'],
         data(){
             return{
                 design: null
@@ -60,12 +60,12 @@
             this.design = new NetworkDesign();
         },
         watch:{
-            configuration: {
-                handler: function (val, oldVal) {
-                    this.generateInputOutput();
-                },
-                deep: true
-            }
+            inputs() {
+                this.generateInputOutput();
+            },
+            outputs() {
+                this.generateInputOutput();
+            },
         },
         mounted(){
             this.draw();
@@ -81,7 +81,7 @@
                     dataGlobal = JSON.parse(JSON.stringify(dataGlobalDefault));
                 }
 
-                for(let i = 0; i < this.configuration.inputs; i++){
+                for(let i = 0; i < this.inputs; i++){
                     dataGlobal.nodes.push({
                         id: "input-"+i,
                         label: "Input "+(i+1),
@@ -101,7 +101,7 @@
                     }
                 }
 
-                for(let i = 0; i < this.configuration.outputs; i++){
+                for(let i = 0; i < this.outputs; i++){
                     dataGlobal.nodes.push({
                         id: "output-"+i,
                         label: "Output "+(i+1),
