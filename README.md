@@ -1,6 +1,12 @@
 # vi-neural
 
-> Výpočetní inteligence js project
+School project for class Výpočetní inteligence at University of South Bohemia, Czech Republic.
+
+Kind of works as a graphical UI for the awesome synaptic.js library.\
+http://vi-neural.trams.cz/
+> Authors:
+>* Pavel Šeps
+>* Ivan Kratochvíl
 
 ## Build Setup
 
@@ -17,5 +23,3 @@ npm run build
 # build for production and view the bundle analyzer report
 npm run build --report
 ```
-
-For a detailed explanation on how things work, check out the [guide](http://vuejs-templates.github.io/webpack/) and [docs for vue-loader](http://vuejs.github.io/vue-loader).
