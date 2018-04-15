@@ -100,7 +100,10 @@
                     outputs: 1,
                     iterations: 1000,
                     speed: 10,
-                    learningRate: 0.5
+                    learningRate: 0.5,
+                    activationFunction: 'LOGISTIC',
+                    costFunction: 'MSE',
+                    minError: 0.005
                 },
                 data: [
                     {
@@ -236,9 +239,7 @@
 <style lang="scss">
 
     #network {
-        font-family: 'Avenir', Helvetica, Arial, sans-serif;
         text-align: center;
-        color: #2c3e50;
         margin-top: 15px;
 
         table {

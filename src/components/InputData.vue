@@ -5,32 +5,14 @@
             <div class="row text-left mb-5">
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label for="inputs">Input layer</label>
+                        <label for="inputs">Počet vstupů</label>
                         <input v-model.number="configuration.inputs" id="inputs" type="number" class="form-control" min="1"/>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label for="outputs">Output layer</label>
+                        <label for="outputs">Počet výstupů</label>
                         <input v-model.number="configuration.outputs" id="outputs" type="number" class="form-control" min="1"/>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="iterations">Iterations</label>
-                        <input v-model.number="configuration.iterations" id="iterations" type="number" class="form-control"/>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="speed">Speed</label>
-                        <input v-model.number="configuration.speed" id="speed" type="number" class="form-control"/>
-                    </div>
-                </div>
-                <div class="col-md-12">
-                    <div class="form-group">
-                        <label for="learningRate">Learning rate</label>
-                        <input v-model.number="configuration.learningRate" id="learningRate" type="number" class="form-control"/>
                     </div>
                 </div>
             </div>
@@ -48,9 +30,9 @@
             </ul>
             <div v-if="tabs.image">
                 <div v-if="normalizedInputs == 2 && normalizedOutputs == 1">
-                    <div class="form-group">
-                        <label for="imageSelectOutput">Output</label>
-                        <input v-model.number="imageSelectOutput" id="imageSelectOutput" type="number" class="form-control" max="1"/>
+                    <div class="form-group mx-auto w-50">
+                        <label for="imageSelectOutput">Výstupní hodnota</label>
+                        <vue-slider id="imageSelectOutput" v-model.number="imageSelectOutput" :min="0" :max="1" :interval="0.05" />
                     </div>
                     <div class="image-select-wrapper mx-auto">
                         <Axis />
@@ -73,8 +55,8 @@
                 <table class="table table-primary table-striped table-data">
                     <thead>
                     <tr class="bg-primary">
-                        <th>Inputs</th>
-                        <th>Outputs</th>
+                        <th>Vstupy</th>
+                        <th>Výstupy</th>
                         <th class="text-right">
                             <button @click="addData()" class="btn btn-success btn-sm">+</button>
                         </th>
@@ -84,12 +66,12 @@
                     <tr v-for="i in data.length">
                         <td>
                             <template v-for="j in configuration.inputs">
-                                {{j}}. input <input v-model.number="data[i - 1].input[j - 1]" class="form-control mb-1 form-control-sm"/><br>
+                                {{j}}. vstup <input v-model.number="data[i - 1].input[j - 1]" class="form-control mb-1 form-control-sm"/><br>
                             </template>
                         </td>
                         <td>
                             <template v-for="j in configuration.outputs">
-                                {{j}}. output <input v-model.number="data[i - 1].output[j - 1]" class="form-control mb-1 form-control-sm"/><br>
+                                {{j}}. výstup <input v-model.number="data[i - 1].output[j - 1]" class="form-control mb-1 form-control-sm"/><br>
                             </template>
                         </td>
                         <td class="text-right">
@@ -125,12 +107,14 @@
 
 <script>
     import Axis from './Axis';
+    import vueSlider from 'vue-slider-component'
 
     export default {
         name: "InputData",
         props: ['configuration', 'data', 'normalizedInputs', 'normalizedOutputs'],
         components: {
-            Axis
+            Axis,
+            vueSlider
         },
         data() {
             return {
@@ -152,10 +136,16 @@
                         for (let i = val.inputs; i < data.input.length; i++) {
                             data.input.splice(val.inputs, 1);
                         }
+                        for(let i = data.input.length; i < val.inputs; i++) {
+                            data.input.push("");
+                        }
                     }
                     for (let data of this.data) {
                         for (let i = val.outputs; i < data.output.length; i++) {
                             data.output.splice(val.outputs, 1);
+                        }
+                        for(let i = data.output.length; i < val.outputs; i++) {
+                            data.output.push("");
                         }
                     }
                 },
@@ -220,7 +210,12 @@
         }
     }
 
+    .vue-slider-component {
+        cursor: pointer;
+    }
+
     .image-select-wrapper {
+        margin-top: 30px;
         position: relative;
         padding: 20px;
         width: 540px;
@@ -232,20 +227,24 @@
         height: 500px;
         border: 1px solid #ccc;
         position: relative;
-        background: grey;
+        background: #eee;
 
         .image-inner {
             height: 100%;
             width: 100%;
             transform: scaleY(-1);
+            cursor: crosshair;
 
             .point {
-                width: 9px;
-                height: 9px;
+                width: 11px;
+                height: 11px;
+                border-radius: 50%;
+                border: 1px solid black;
                 margin-left: -4.5px;
                 margin-top: -4.5px;
                 position: absolute;
                 background-color: black;
+                cursor: pointer;
             }
         }
     }

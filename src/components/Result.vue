@@ -1,9 +1,53 @@
 <template>
     <div>
         <h1>Výsledek</h1>
-        <span class="btn btn-primary" @click="$emit('save')">Uložit</span>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="iterations">Maximální počet iterací</label>
+                    <input v-model.number="configuration.iterations" id="iterations" type="number" class="form-control" step="100"/>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="speed">Rychlost animace (počet iterací ve snímku)</label>
+                    <input v-model.number="configuration.speed" id="speed" type="number" class="form-control" step="10"/>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="learningRate">Míra učení</label>
+                    <input id="learningRate" v-model.number="configuration.learningRate" min="0" step="0.1" type="number" class="form-control" />
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="activationFunction">Aktivační funkce</label>
+                    <select v-model="configuration.activationFunction" id="activationFunction" class="form-control">
+                        <option v-for="(func, key) in activationFunctions">{{ key }}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="minError">Minimální chyba</label>
+                    <input id="minError" v-model.number="configuration.minError" min="0" max="1" step="0.001" class="form-control" type="number" />
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label for="activationFunction">Chybová funkce</label>
+                    <select v-model="configuration.costFunction" id="costFunction" class="form-control">
+                        <option v-for="(func, key) in costFunctions">{{ key }}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
         <div class="mb">
-            <button class="btn btn-primary" @click="learn">Learn</button>
+            <span class="btn btn-primary" @click="$emit('save')">Uložit síť s konfigurací</span>
+        </div>
+        <div class="mb">
+            <button class="btn btn-primary" @click="learn">Učit</button>
             <button class="btn btn-danger" @click="stop = true">Stop</button>
         </div>
         <div v-if="normalizedInputs == 2 && normalizedOutputs == 1" class="canvas-container">
@@ -14,30 +58,30 @@
             <Axis vertical="true" bottom="true" />
         </div>
         <div v-else v-for="result in results">
-            <table>
+            <table class="result-table">
                 <tr>
-                    <td v-for="j in result.input.length" style="width: 10px">
-                        {{ result.input[j - 1] }},
+                    <td v-for="j in result.input.length">
+                        {{ result.input[j - 1].toFixed(5) }}
                     </td>
                     <td> => </td>
-                    <td v-for="j in result.output.length" style="width: 150px">
-                        {{ result.output[j - 1] }},
+                    <td v-for="j in result.output.length">
+                        {{ result.output[j - 1].toFixed(5) }}
                     </td>
                 </tr>
             </table>
         </div>
-        <p>Iteration: {{ iteration }}</p>
-        <h1>Test the network</h1>
+        <p>Iterace: {{ iteration }}</p>
+        <p>Průměrná chyba: {{ error }}</p>
+        <h1>Otestovat síť</h1>
         <div>
-            <table>
+            <table class="mb">
                 <td v-for="j in configuration.inputs">
-                    <input v-model.number="testInput[j - 1]" />
+                    <input v-model.number="testInput[j - 1]" class="form-control"/>
                 </td>
-                <td> => </td>
-                <td>{{ testOutput }}</td>
             </table>
+            <button @click="test" class="btn btn-primary mb">Test</button>
+            <p><span v-for="output in testOutput">{{ output.toFixed(5) }} </span></p>
         </div>
-        <button @click="test">Test</button>
     </div>
 </template>
 
@@ -59,7 +103,10 @@
                 testInput: [],
                 testOutput: null,
                 results: [],
-                stop: false
+                stop: false,
+                activationFunctions: synaptic.Neuron.squash,
+                costFunctions: synaptic.Trainer.cost,
+                error: 1
             }
         },
         mounted() {
@@ -79,14 +126,14 @@
                 this.testOutput = normalizer.deNormalizeOutput(output);
             },
             createNetwork() {
-                // TODO: check when more layers
                 let neurons = [];
                 let inputLayer = new synaptic.Layer();
-                let hiddenLayers = []
+                let hiddenLayers = [];
                 let outputLayer = new synaptic.Layer();
                 for (let node of this.networkDesign.nodes) {
                     let neuron = new synaptic.Neuron();
                     neuron.nodeId = node.id;
+                    neuron.squash = this.activationFunctions[this.configuration.activationFunction];
                     neurons.push(neuron);
 
                     if (node.id.startsWith('input')) {
@@ -146,16 +193,25 @@
             },
             learn() {
                 this.stop = false;
+                this.error = 0;
                 this.createNetwork();
 
                 this.iteration = 0;
                 let iterate = () => {
                     for (let i = 0; i < this.configuration.speed; i++) {
+                        let errorSum = 0;
                         for (let data of this.data) {
-                            this.network.activate(data.input);
+                            let output = this.network.activate(data.input);
                             this.network.propagate(this.configuration.learningRate, data.output);
+                            errorSum += this.costFunctions[this.configuration.costFunction](data.output, output);
                         }
                         this.iteration++;
+                        this.error = errorSum / this.data.length;
+
+                        if (this.iteration >= this.configuration.iterations || this.error <= this.configuration.minError) {
+                            this.stop = true;
+                            break;
+                        }
                     }
                 };
                 if (this.normalizedInputs == 2 && this.normalizedOutputs == 1) {
@@ -174,10 +230,6 @@
                                 ctx.fillRect(x, y, res, res);
                             }
                         }
-
-                        if (this.iteration >= this.configuration.iterations) {
-                            this.stop = true;
-                        }
                         if(!this.stop) {
                             requestAnimationFrame(draw);
                         }
@@ -193,10 +245,6 @@
                                 input: input,
                                 output: this.network.activate(input)
                             });
-                        }
-
-                        if (this.iteration >= this.configuration.iterations) {
-                            this.stop = true;
                         }
                         if(!this.stop) {
                             requestAnimationFrame(showResults);
@@ -219,6 +267,13 @@
 
         canvas {
             transform: scaleY(-1);
+        }
+    }
+
+    .result-table {
+        td {
+            width: 70px;
+            text-align: center;
         }
     }
 </style>

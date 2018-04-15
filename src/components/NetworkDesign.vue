@@ -21,7 +21,7 @@
             <span
                     class="btn btn-primary"
                     @click="generateGraphStructure()"
-            >Načist</span>
+            >Načíst</span>
             <span
                     class="btn btn-primary"
                     @click="generateGraphStructure(true, false)"
