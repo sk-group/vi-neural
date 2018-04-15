@@ -43,7 +43,7 @@
                     left: data.input[0] * 100 + '%',
                     top: data.input[1] * 100 +'%',
                     backgroundColor: 'rgba(' + Math.round(255 * data.output[0]) + ',' + Math.round(255 * data.output[0]) + ',' + Math.round(255 * data.output[0]) + ',1)' }"
-                      @click="removePoint(index, $event)"></span>
+                      @click.stop="removePoint(index)"></span>
                         </div>
                     </div>
                 </div>
@@ -152,8 +152,7 @@
                     ]
                 });
             },
-            removePoint(index, e) {
-                e.stopPropagation();
+            removePoint(index) {
                 this.data.splice(index, 1);
             }
         }
