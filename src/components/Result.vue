@@ -51,11 +51,11 @@
             <button class="btn btn-danger" @click="stop = true">Stop</button>
         </div>
         <div v-if="normalizedInputs == 2 && normalizedOutputs == 1" class="canvas-container">
-            <Axis/>
-            <Axis vertical="true"/>
+            <Axis :min="xMin" :max="xMax"/>
+            <Axis vertical="true" :min="yMin" :max="yMax"/>
             <canvas width="500" height="500" ref="canvas"></canvas>
-            <Axis bottom="true"/>
-            <Axis vertical="true" bottom="true"/>
+            <Axis bottom="true" :min="xMin" :max="xMax"/>
+            <Axis vertical="true" bottom="true" :min="yMin" :max="yMax"/>
         </div>
         <div v-else v-for="result in results">
             <table class="result-table">
@@ -128,6 +128,36 @@
                 activationFunctions: synaptic.Neuron.squash,
                 costFunctions: synaptic.Trainer.cost,
                 error: 1
+            }
+        },
+        computed: {
+            xMin() {
+                let xMin = 0;
+                if(this.metadata && this.metadata.input[0]) {
+                    return this.metadata.input[0].min
+                }
+                return xMin;
+            },
+            xMax() {
+                let xMax = 1;
+                if(this.metadata && this.metadata.input[0]) {
+                    return this.metadata.input[0].max
+                }
+                return xMax;
+            },
+            yMin() {
+                let yMin = 0;
+                if(this.metadata && this.metadata.input[1]) {
+                    return this.metadata.input[1].min
+                }
+                return yMin;
+            },
+            yMax() {
+                let yMax = 1;
+                if(this.metadata && this.metadata.input[1]) {
+                    return this.metadata.input[1].max
+                }
+                return yMax;
             }
         },
         mounted() {

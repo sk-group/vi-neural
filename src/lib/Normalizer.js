@@ -46,7 +46,11 @@ export default class Normalizer {
                     if (this.metadata.input[i].type === 'number') {
                         let min = this.metadata.input[i].min;
                         let max = this.metadata.input[i].max;
-                        let minmax = (data.input[i] - min) / (max - min);
+                        let diff = max - min;
+                        let minmax = 0;
+                        if(diff !== 0) {
+                            minmax = (data.input[i] - min) / diff;
+                        }
                         input.push(minmax);
                     } else if (this.metadata.input[i].type === 'string') {
                         for(let binary of this.metadata.input[i].binarized[data.input[i]]) {

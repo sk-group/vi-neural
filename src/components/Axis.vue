@@ -3,17 +3,17 @@
     vertical: this.vertical,
     bottom: this.bottom}" ref="axis">
         <span class="line"></span>
-        <span class="label zero">0</span>
+        <span class="label zero">{{ min }}</span>
         <span class="rule" v-for="rule in rules" :style="{
             top: rule.top,
             left: rule.left}" />
-        <span class="label one">1</span>
+        <span class="label one">{{ max }}</span>
     </div>
 </template>
 
 <script>
     export default {
-        props: ['vertical', 'size', 'bottom'],
+        props: ['vertical', 'size', 'bottom', 'min', 'max'],
         mounted() {
             let axis = this.$refs.axis;
             if (this.vertical) {

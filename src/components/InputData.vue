@@ -35,8 +35,8 @@
                         <vue-slider id="imageSelectOutput" v-model.number="imageSelectOutput" :min="0" :max="1" :interval="0.05"/>
                     </div>
                     <div class="image-select-wrapper mx-auto">
-                        <Axis/>
-                        <Axis vertical="true"/>
+                        <Axis :min="0" :max="1"/>
+                        <Axis vertical="true" :min="0" :max="1"/>
                         <div class="image-select" @click="addPoint" ref="imageSelect">
                             <div class="image-inner">
                         <span v-for="(data, index) in data" class="point" :style="{
@@ -46,8 +46,8 @@
                               @click.stop="removePoint(index)"></span>
                             </div>
                         </div>
-                        <Axis bottom="true"/>
-                        <Axis vertical="true" bottom="true"/>
+                        <Axis bottom="true" :min="0" :max="1"/>
+                        <Axis vertical="true" bottom="true" :min="0" :max="1"/>
                     </div>
                 </div>
             </div>
