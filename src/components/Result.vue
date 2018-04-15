@@ -61,11 +61,22 @@
             <table class="result-table">
                 <tr>
                     <td v-for="j in result.input.length">
-                        {{ result.input[j - 1].toFixed(5) }}
+                        <span v-if="typeof(result.input[j - 1]) === 'number'">
+                            {{ result.input[j - 1].toFixed(5) }}
+                        </span>
+                        <span v-else>
+                            {{ result.input[j - 1] }}
+                        </span>
+
                     </td>
                     <td> => </td>
                     <td v-for="j in result.output.length">
-                        {{ result.output[j - 1].toFixed(5) }}
+                        <span v-if="typeof(result.output[j - 1]) === 'number'">
+                            {{ result.output[j - 1].toFixed(5) }}
+                        </span>
+                        <span v-else>
+                            {{ result.output[j - 1] }}
+                        </span>
                     </td>
                 </tr>
             </table>
@@ -80,7 +91,16 @@
                 </td>
             </table>
             <button @click="test" class="btn btn-primary mb">Test</button>
-            <p><span v-for="output in testOutput">{{ output.toFixed(5) }} </span></p>
+            <p>
+                <span v-for="output in testOutput">
+                    <span v-if="typeof(output) === 'number'">
+                        {{ output.toFixed(5) }}
+                    </span>
+                    <span v-else>
+                        {{ output }}
+                </span>
+            </span>
+            </p>
         </div>
     </div>
 </template>
