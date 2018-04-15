@@ -17,7 +17,7 @@
             <div class="col-md-6">
                 <div class="form-group">
                     <label for="learningRate">Míra učení</label>
-                    <input id="learningRate" v-model.number="configuration.learningRate" min="0" step="0.1" type="number" class="form-control" />
+                    <input id="learningRate" v-model.number="configuration.learningRate" min="0" step="0.1" type="number" class="form-control"/>
                 </div>
             </div>
             <div class="col-md-6">
@@ -31,7 +31,7 @@
             <div class="col-md-6">
                 <div class="form-group">
                     <label for="minError">Minimální chyba</label>
-                    <input id="minError" v-model.number="configuration.minError" min="0" max="1" step="0.001" class="form-control" type="number" />
+                    <input id="minError" v-model.number="configuration.minError" min="0" max="1" step="0.001" class="form-control" type="number"/>
                 </div>
             </div>
             <div class="col-md-6">
@@ -51,11 +51,11 @@
             <button class="btn btn-danger" @click="stop = true">Stop</button>
         </div>
         <div v-if="normalizedInputs == 2 && normalizedOutputs == 1" class="canvas-container">
-            <Axis />
+            <Axis/>
             <Axis vertical="true"/>
             <canvas width="500" height="500" ref="canvas"></canvas>
-            <Axis bottom="true" />
-            <Axis vertical="true" bottom="true" />
+            <Axis bottom="true"/>
+            <Axis vertical="true" bottom="true"/>
         </div>
         <div v-else v-for="result in results">
             <table class="result-table">
@@ -88,6 +88,7 @@
 <script>
     import Axis from './Axis.vue';
     import Normalizer from '../lib/Normalizer';
+
     let synaptic = require('synaptic');
 
     export default {
@@ -111,7 +112,7 @@
         },
         mounted() {
             let canvas = this.$refs.canvas;
-            if(canvas) {
+            if (canvas) {
                 let ctx = canvas.getContext("2d");
                 ctx.fillStyle = "black";
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -168,19 +169,19 @@
                 for (let inputNeuron of inputLayer.list) {
                     //projectNeurons(inputNeuron); //DFS
                     queue.push(inputNeuron);
-                    while(queue.length !== 0) {
+                    while (queue.length !== 0) {
                         let neuron = queue.shift();
                         let hiddenLayer = new synaptic.Layer();
                         let neighbors = findNeighbors(neuron);
-                        for(let neighbor of neighbors) {
-                            if(searchedNeuronsIds.indexOf(neighbor.nodeId) === -1 && !neighbor.nodeId.startsWith('output')) {
+                        for (let neighbor of neighbors) {
+                            if (searchedNeuronsIds.indexOf(neighbor.nodeId) === -1 && !neighbor.nodeId.startsWith('output')) {
                                 hiddenLayer.list.push(neighbor);
                                 queue.push(neighbor);
                                 searchedNeuronsIds.push(neighbor.nodeId);
                             }
                             neuron.project(neighbor);
                         }
-                        if(hiddenLayer.list.length > 0) {
+                        if (hiddenLayer.list.length > 0) {
                             hiddenLayers.push(hiddenLayer)
                         }
                     }
@@ -221,7 +222,7 @@
                     let ctx = canvas.getContext("2d");
                     let draw = () => {
                         iterate();
-                        ctx.fillStyle= "black";
+                        ctx.fillStyle = "black";
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                         for (let x = 0; x <= canvas.width; x += res) {
                             for (let y = 0; y <= canvas.height; y += res) {
@@ -230,7 +231,7 @@
                                 ctx.fillRect(x, y, res, res);
                             }
                         }
-                        if(!this.stop) {
+                        if (!this.stop) {
                             requestAnimationFrame(draw);
                         }
                     };
@@ -246,7 +247,7 @@
                                 output: this.network.activate(input)
                             });
                         }
-                        if(!this.stop) {
+                        if (!this.stop) {
                             requestAnimationFrame(showResults);
                         }
                     };

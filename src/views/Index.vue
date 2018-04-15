@@ -1,6 +1,6 @@
 <template>
     <div id="index">
-        <div class="main container">
+        <div class="container">
             <div>
                 <h1 class="my-5 title">vi-neural</h1>
                 <p>Vytvořte si vlastní neuronovou síť.</p>
@@ -32,22 +32,12 @@
                 </div>
             </div>
         </div>
-        <div class="text-center footer">
-            <p>
-                &copy; {{ year }} sk-group <a class="github-button" href="https://github.com/sk-group/vi-neural" aria-label="Star sk-group/vi-neural on GitHub">Star</a>
-            </p>
-        </div>
     </div>
 </template>
 
 <script>
     export default {
-        name: 'Index',
-        data() {
-            return {
-                year: new Date().getFullYear()
-            }
-        }
+        name: 'Index'
     }
 </script>
 
@@ -61,61 +51,39 @@
         padding: 1rem 2rem;
     }
 
-    #index {
-        font-family: 'Avenir', Helvetica, Arial, sans-serif;
-        display: flex;
-        min-height: 100vh;
-        flex-direction: column;
-        color: #2c3e50;
-    }
+    .powered-by {
+        position: relative;
+        display: block;
+        height: 300px;
+        background-color: #eee;
+        background-position: center center;
+        background-repeat: no-repeat;
+        color: inherit;
 
-    .main {
-        flex: 1;
-        text-align: center;
-
-        .powered-by {
-            position: relative;
-            display: block;
-            height: 300px;
-            background-color: #eee;
-            background-position: center center;
-            background-repeat: no-repeat;
-            color: inherit;
-
-            &:hover {
-                background-color: #ddd;
-            }
-
-            &.synapticjs {
-                background-image: url(../assets/synapticjs.png);
-            }
-
-            &.vuejs {
-                background-image: url(../assets/vuejs.png);
-            }
-
-            &.visjs {
-                background-image: url(../assets/visjs.png);
-            }
-
-            &.bootstrap {
-                background-image: url(../assets/bootstrap.png);
-            }
-
-            h3 {
-                position: absolute;
-                bottom: 0;
-                width: 100%;
-            }
+        &:hover {
+            background-color: #ddd;
         }
-    }
 
-    .footer {
-        background: #eee;
-        padding: 15px;
+        &.synapticjs {
+            background-image: url(../assets/synapticjs.png);
+        }
 
-        p {
-            margin-bottom: 0;
+        &.vuejs {
+            background-image: url(../assets/vuejs.png);
+        }
+
+        &.visjs {
+            background-image: url(../assets/visjs.png);
+        }
+
+        &.bootstrap {
+            background-image: url(../assets/bootstrap.png);
+        }
+
+        h3 {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
         }
     }
 </style>

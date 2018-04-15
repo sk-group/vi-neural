@@ -32,22 +32,22 @@
                 <div v-if="normalizedInputs == 2 && normalizedOutputs == 1">
                     <div class="form-group mx-auto w-50">
                         <label for="imageSelectOutput">Výstupní hodnota</label>
-                        <vue-slider id="imageSelectOutput" v-model.number="imageSelectOutput" :min="0" :max="1" :interval="0.05" />
+                        <vue-slider id="imageSelectOutput" v-model.number="imageSelectOutput" :min="0" :max="1" :interval="0.05"/>
                     </div>
                     <div class="image-select-wrapper mx-auto">
-                        <Axis />
+                        <Axis/>
                         <Axis vertical="true"/>
                         <div class="image-select" @click="addPoint" ref="imageSelect">
                             <div class="image-inner">
-                            <span v-for="(data, index) in data" class="point" :style="{
-                                left: data.input[0] * 100 + '%',
-                                top: data.input[1] * 100 +'%',
-                                backgroundColor: 'rgba(' + Math.round(255 * data.output[0]) + ',' + Math.round(255 * data.output[0]) + ',' + Math.round(255 * data.output[0]) + ',1)' }"
-                                  @click.stop="removePoint(index)"></span>
+                        <span v-for="(data, index) in data" class="point" :style="{
+                            left: data.input[0] * 100 + '%',
+                            top: data.input[1] * 100 +'%',
+                            backgroundColor: 'rgba(' + Math.round(255 * data.output[0]) + ',' + Math.round(255 * data.output[0]) + ',' + Math.round(255 * data.output[0]) + ',1)' }"
+                              @click.stop="removePoint(index)"></span>
                             </div>
                         </div>
-                        <Axis bottom="true" />
-                        <Axis vertical="true" bottom="true" />
+                        <Axis bottom="true"/>
+                        <Axis vertical="true" bottom="true"/>
                     </div>
                 </div>
             </div>
@@ -136,7 +136,7 @@
                         for (let i = val.inputs; i < data.input.length; i++) {
                             data.input.splice(val.inputs, 1);
                         }
-                        for(let i = data.input.length; i < val.inputs; i++) {
+                        for (let i = data.input.length; i < val.inputs; i++) {
                             data.input.push("");
                         }
                     }
@@ -144,7 +144,7 @@
                         for (let i = val.outputs; i < data.output.length; i++) {
                             data.output.splice(val.outputs, 1);
                         }
-                        for(let i = data.output.length; i < val.outputs; i++) {
+                        for (let i = data.output.length; i < val.outputs; i++) {
                             data.output.push("");
                         }
                     }
@@ -191,7 +191,7 @@
             removePoint(index) {
                 this.data.splice(index, 1);
             },
-            fileUpload(data){
+            fileUpload(data) {
                 this.$emit('load', data)
             }
         }
