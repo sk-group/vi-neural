@@ -15,10 +15,22 @@
                         <input v-model.number="configuration.outputs" id="outputs" type="number" class="form-control" min="1"/>
                     </div>
                 </div>
-                <div class="col-md-12">
+                <div class="col-md-6">
                     <div class="form-group">
                         <label for="iterations">Iterations</label>
                         <input v-model.number="configuration.iterations" id="iterations" type="number" class="form-control"/>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="speed">Speed</label>
+                        <input v-model.number="configuration.speed" id="speed" type="number" class="form-control"/>
+                    </div>
+                </div>
+                <div class="col-md-12">
+                    <div class="form-group">
+                        <label for="learningRate">Learning rate</label>
+                        <input v-model.number="configuration.learningRate" id="learningRate" type="number" class="form-control"/>
                     </div>
                 </div>
             </div>
@@ -40,14 +52,20 @@
                         <label for="imageSelectOutput">Output</label>
                         <input v-model.number="imageSelectOutput" id="imageSelectOutput" type="number" class="form-control" max="1"/>
                     </div>
-                    <div class="image-select mx-auto" @click="addPoint" ref="imageSelect">
-                        <div class="image-inner">
-                <span v-for="(data, index) in data" class="point" :style="{
-                    left: data.input[0] * 100 + '%',
-                    top: data.input[1] * 100 +'%',
-                    backgroundColor: 'rgba(' + Math.round(255 * data.output[0]) + ',' + Math.round(255 * data.output[0]) + ',' + Math.round(255 * data.output[0]) + ',1)' }"
-                      @click.stop="removePoint(index)"></span>
+                    <div class="image-select-wrapper mx-auto">
+                        <Axis />
+                        <Axis vertical="true"/>
+                        <div class="image-select" @click="addPoint" ref="imageSelect">
+                            <div class="image-inner">
+                            <span v-for="(data, index) in data" class="point" :style="{
+                                left: data.input[0] * 100 + '%',
+                                top: data.input[1] * 100 +'%',
+                                backgroundColor: 'rgba(' + Math.round(255 * data.output[0]) + ',' + Math.round(255 * data.output[0]) + ',' + Math.round(255 * data.output[0]) + ',1)' }"
+                                  @click.stop="removePoint(index)"></span>
+                            </div>
                         </div>
+                        <Axis bottom="true" />
+                        <Axis vertical="true" bottom="true" />
                     </div>
                 </div>
             </div>
@@ -57,7 +75,9 @@
                     <tr class="bg-primary">
                         <th>Inputs</th>
                         <th>Outputs</th>
-                        <th class="text-right"><button @click="addData()" class="btn btn-success btn-sm">+</button></th>
+                        <th class="text-right">
+                            <button @click="addData()" class="btn btn-success btn-sm">+</button>
+                        </th>
                     </tr>
                     </thead>
                     <tbody>
@@ -104,11 +124,14 @@
 </template>
 
 <script>
-
+    import Axis from './Axis';
 
     export default {
         name: "InputData",
         props: ['configuration', 'data', 'normalizedInputs', 'normalizedOutputs'],
+        components: {
+            Axis
+        },
         data() {
             return {
                 tabs: {
@@ -122,16 +145,16 @@
         watch: {
             configuration: {
                 handler(val) {
-                    if(val.inputs != 2 || val.outputs != 1) {
+                    if (val.inputs != 2 || val.outputs != 1) {
                         this.setActiveTab('custom');
                     }
-                    for(let data of this.data) {
-                        for(let i = val.inputs; i < data.input.length; i++) {
+                    for (let data of this.data) {
+                        for (let i = val.inputs; i < data.input.length; i++) {
                             data.input.splice(val.inputs, 1);
                         }
                     }
-                    for(let data of this.data) {
-                        for(let i = val.outputs; i < data.output.length; i++) {
+                    for (let data of this.data) {
+                        for (let i = val.outputs; i < data.output.length; i++) {
                             data.output.splice(val.outputs, 1);
                         }
                     }
@@ -145,10 +168,10 @@
                     input: [],
                     output: []
                 };
-                for(let i = 0; i < this.configuration.inputs; i++) {
+                for (let i = 0; i < this.configuration.inputs; i++) {
                     newData.input.push("");
                 }
-                for(let i = 0; i < this.configuration.outputs; i++) {
+                for (let i = 0; i < this.configuration.outputs; i++) {
                     newData.output.push("");
                 }
                 this.data.push(newData);
@@ -197,9 +220,16 @@
         }
     }
 
+    .image-select-wrapper {
+        position: relative;
+        padding: 20px;
+        width: 540px;
+        height: 540px;
+    }
+
     .image-select {
-        width: 25vw;
-        height: 25vw;
+        width: 500px;
+        height: 500px;
         border: 1px solid #ccc;
         position: relative;
         background: grey;

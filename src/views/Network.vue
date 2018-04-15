@@ -62,16 +62,24 @@
         },
         computed: {
             normalizedInputs() {
-                return this.normalizer.getInputCount()
+                let normalizedInputs = this.normalizer.getInputCount();
+                if(normalizedInputs === 0) {
+                    return this.configuration.inputs;
+                }
+                return normalizedInputs;
             },
             normalizedOutputs() {
-                return this.normalizer.getOutputCount()
+                let normalizedOutputs = this.normalizer.getOutputCount();
+                if(normalizedOutputs === 0) {
+                    return this.configuration.outputs;
+                }
+                return this.normalizer.getOutputCount();
             },
             normalizedData() {
-                return this.normalizer.getNormalizedData()
+                return this.normalizer.getNormalizedData();
             },
             metadata() {
-                return this.normalizer.getMetadata()
+                return this.normalizer.getMetadata();
             }
         },
         data(){
@@ -84,7 +92,9 @@
                         }
                     ],
                     outputs: 1,
-                    iterations: 1000
+                    iterations: 1000,
+                    speed: 10,
+                    learningRate: 0.5
                 },
                 data: [
                     {

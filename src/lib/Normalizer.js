@@ -78,7 +78,6 @@ export default class Normalizer {
                 output: output
             });
         }
-        console.log('metadata', this.metadata);
     };
 
     normalizeInput(input) {
@@ -199,7 +198,6 @@ export default class Normalizer {
             }
             this.metadata.output.push(metadata);
         }
-        console.log('distinct', distinct);
     }
 
     getTypes() {

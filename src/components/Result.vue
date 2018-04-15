@@ -3,7 +3,8 @@
         <h1>Výsledek</h1>
         <span class="btn btn-primary" @click="$emit('save')">Uložit</span>
         <div class="mb">
-            <button @click="learn">Learn</button>
+            <button class="btn btn-primary" @click="learn">Learn</button>
+            <button class="btn btn-danger" @click="stop = true">Stop</button>
         </div>
         <div v-if="normalizedInputs == 2 && normalizedOutputs == 1" class="canvas-container">
             <Axis />
@@ -36,7 +37,7 @@
                 <td>{{ testOutput }}</td>
             </table>
         </div>
-        <button @click="test()">Test</button>
+        <button @click="test">Test</button>
     </div>
 </template>
 
@@ -58,6 +59,7 @@
                 testInput: [],
                 testOutput: null,
                 results: [],
+                stop: false
             }
         },
         mounted() {
@@ -77,6 +79,7 @@
                 this.testOutput = normalizer.deNormalizeOutput(output);
             },
             createNetwork() {
+                // TODO: check when more layers
                 let neurons = [];
                 let inputLayer = new synaptic.Layer();
                 let hiddenLayers = [];
@@ -130,16 +133,15 @@
                 })
             },
             learn() {
+                this.stop = false;
                 this.createNetwork();
-
-                let learningRate = 0.5;
 
                 this.iteration = 0;
                 let iterate = () => {
-                    for (let i = 0; i < 10; i++) {
+                    for (let i = 0; i < this.configuration.speed; i++) {
                         for (let data of this.data) {
                             this.network.activate(data.input);
-                            this.network.propagate(learningRate, data.output);
+                            this.network.propagate(this.configuration.learningRate, data.output);
                         }
                         this.iteration++;
                     }
@@ -161,7 +163,10 @@
                             }
                         }
 
-                        if (this.iteration < this.configuration.iterations) {
+                        if (this.iteration >= this.configuration.iterations) {
+                            this.stop = true;
+                        }
+                        if(!this.stop) {
                             requestAnimationFrame(draw);
                         }
                     };
@@ -178,7 +183,10 @@
                             });
                         }
 
-                        if(this.iteration < this.configuration.iterations) {
+                        if (this.iteration >= this.configuration.iterations) {
+                            this.stop = true;
+                        }
+                        if(!this.stop) {
                             requestAnimationFrame(showResults);
                         }
                     };
