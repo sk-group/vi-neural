@@ -1,4 +1,9 @@
 export default class Normalizer {
+    constructo() {
+        this.data = [];
+        this.normalizedData = [];
+    }
+
     setData(data) {
         data = JSON.parse(JSON.stringify(data));
         for(let i = 0; i < data.length; i++) {
@@ -86,8 +91,8 @@ export default class Normalizer {
             output: []
         }];
         this.normalize();
-        this.data = null;
-        return this.getNormalizedData()[0].input;
+        this.data = [];
+        return this.normalizedData[0].input;
     }
 
     deNormalizeOutput(output) {
