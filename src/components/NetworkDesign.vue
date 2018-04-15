@@ -1,14 +1,30 @@
 <template>
     <div>
         <h1>Návrh sítě</h1>
+        <h4>Vnitřní vrstvy</h4>
+        <div class="hidden-layers">
+            <div class="row">
+                <div class="col" v-for="(item, index) in hiddenLayers">
+                    <div class="input-group mb-2">
+                        <input type="number"  v-model="item.count" class="form-control" />
+                        <div class="input-group-append">
+                            <span class="input-group-text bg-danger" @click="removeHiddenLayer(index)" style="color: #fff;">-</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-1 text-right">
+                    <span class="btn btn-success" @click="addHiddenLayer">+</span>
+                </div>
+            </div>
+        </div>
         <div class="text-center mb-3">
             <span
                     class="btn btn-primary"
-                    @click="generateInputOutput()"
+                    @click="generateGraphStructure()"
             >Obnovit</span>
             <span
                     class="btn btn-primary"
-                    @click="generateInputOutput(true, true)"
+                    @click="generateGraphStructure(true, false)"
             >Smazat vše</span>
         </div>
         <div id="mynetwork"></div>
@@ -29,11 +45,7 @@
     let vis = require('../../node_modules/vis/index');
     let network = null;
     let dataGlobalDefault = {
-        nodes: [
-            {id: "0", label: ""},
-            {id: "1", label: ""},
-            {id: "2", label: ""},
-        ],
+        nodes: [],
         edges: []
     };
     let dataGlobal = JSON.parse(JSON.stringify(dataGlobalDefault));
@@ -60,33 +72,40 @@
         props: ['configuration', 'inputs', 'outputs'],
         data(){
             return{
-                design: null
+                design: null,
+                hiddenLayers:[
+                    {
+                        count: 3
+                    }
+                ]
             }
         },
         created(){
-            this.generateInputOutput(false);
+            this.generateGraphStructure(false);
             this.design = new NetworkDesign();
         },
         watch:{
             inputs() {
-                this.generateInputOutput();
+                this.generateGraphStructure();
             },
             outputs() {
-                this.generateInputOutput();
+                this.generateGraphStructure();
             },
+            hiddenLayers: {
+                handler(){
+                    this.generateGraphStructure();
+                },
+                deep: true
+            }
         },
         mounted(){
             this.draw();
         },
         methods: {
-            generateInputOutput(canDraw = true, clearAll = false){
-                if(clearAll){
-                    dataGlobal = {
-                        nodes: [],
-                        edges: []
-                    }
-                }else{
-                    dataGlobal = JSON.parse(JSON.stringify(dataGlobalDefault));
+            generateGraphStructure(canDraw = true, hiddenLayers = true){
+                dataGlobal = {
+                    nodes: [],
+                    edges: []
                 }
 
                 for(let i = 0; i < this.inputs; i++){
@@ -98,15 +117,6 @@
                         y: 100*i,
                         color: '#8cffaa'
                     });
-
-                    for(let y = 0; y < 3; y++){
-                        dataGlobal.edges.push({
-                            from: "input-"+i,
-                            to: y,
-                            id: getUid(),
-                            arrows: "to"
-                        });
-                    }
                 }
 
                 for(let i = 0; i < this.outputs; i++){
@@ -118,16 +128,56 @@
                         y: 100*i,
                         color: '#ff5b63'
                     });
+                }
 
-                    for(let y = 0; y < 3; y++){
-                        dataGlobal.edges.push({
-                            from: y,
-                            to: "output-"+i,
-                            id: getUid(),
-                            arrows: "to"
-                        });
+
+                if(hiddenLayers){
+                    let nodeId = "";
+                    for(let it in this.hiddenLayers){
+
+                        for(let y = 0; y < this.hiddenLayers[it].count; y++){
+                            nodeId = "hidden-"+it+"-"+y;
+                            dataGlobal.nodes.push({
+                                id: nodeId,
+                                label: "",
+                            });
+
+                            if(it == 0){
+                                for(let itInput = 0; itInput < this.inputs; itInput++){
+                                    dataGlobal.edges.push({
+                                        from: "input-"+itInput,
+                                        to: nodeId,
+                                        id: getUid(),
+                                        arrows: "to"
+                                    });
+                                }
+                            }else{
+                                for(let itNodeBefore = 0; itNodeBefore < this.hiddenLayers[it-1].count; itNodeBefore++){
+
+                                    dataGlobal.edges.push({
+                                        from: "hidden-"+(it-1)+"-"+itNodeBefore,
+                                        to: nodeId,
+                                        id: getUid(),
+                                        arrows: "to"
+                                    });
+                                }
+                            }
+
+
+                            if(it == (this.hiddenLayers.length-1)){
+                                for(let itOutput = 0; itOutput < this.outputs; itOutput++){
+                                    dataGlobal.edges.push({
+                                        from: nodeId,
+                                        to: "output-"+itOutput,
+                                        id: getUid(),
+                                        arrows: "to"
+                                    });
+                                }
+                            }
+                        }
                     }
                 }
+
                 if(canDraw){
                     this.draw();
                 }
@@ -207,6 +257,14 @@
                 this.design.setEdges(data.edges);
                 this.design.setNodes(data.nodes);
                 this.$emit('graph-change', this.design);
+            },
+            addHiddenLayer(){
+                this.hiddenLayers.push({
+                    count: 2
+                });
+            },
+            removeHiddenLayer(index){
+                this.hiddenLayers.splice(index, 1);
             }
         }
     }
