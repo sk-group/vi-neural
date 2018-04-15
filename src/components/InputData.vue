@@ -30,6 +30,9 @@
                 <li class="nav-item" @click="setActiveTab('custom')">
                     <span class="nav-link cursor-pointer" :class="{'active': tabs.custom}">Vlastní data</span>
                 </li>
+                <li class="nav-item" @click="setActiveTab('importTab')">
+                    <span class="nav-link cursor-pointer" :class="{'active': tabs.importTab}">Vložit konfigurační soubor</span>
+                </li>
             </ul>
             <div v-if="tabs.image">
                 <div v-if="normalizedInputs == 2 && normalizedOutputs == 1">
@@ -76,6 +79,18 @@
                     </tbody>
                 </table>
             </div>
+            <div v-if="tabs.importTab">
+                <div class="row">
+                    <div class="col-md-6 offset-md-3">
+                        <div class="text-left">
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="inputGroupFile04" accept=".vins" @change="fileUpload">
+                                <label class="custom-file-label" for="inputGroupFile04">Vložte soubor</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="text-right mt-3">
                 <span
                         class="btn btn-success btn-lg cursor-pointer"
@@ -98,7 +113,8 @@
             return {
                 tabs: {
                     image: true,
-                    custom: false
+                    custom: false,
+                    importTab: false
                 },
                 imageSelectOutput: 0
             }
@@ -161,6 +177,9 @@
             },
             removePoint(index) {
                 this.data.splice(index, 1);
+            },
+            fileUpload(data){
+                this.$emit('load', data)
             }
         }
     }

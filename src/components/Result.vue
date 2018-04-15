@@ -1,6 +1,7 @@
 <template>
     <div>
         <h1>Výsledek</h1>
+        <span class="btn btn-primary" @click="$emit('save')">Uložit</span>
         <div class="mb">
             <button @click="learn">Learn</button>
         </div>

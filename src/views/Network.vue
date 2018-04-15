@@ -9,11 +9,13 @@
                     :normalizedOutputs="normalizedOutputs"
                     :data="data"
                     @next="show('design')"
+                    @load="loadFromFile"
             ></InputData>
             <NetworkDesign
                     v-if="isVisible('design')"
                     :inputs="normalizedInputs"
                     :outputs="normalizedOutputs"
+                    :hiddenLayers="configuration.hidden"
                     @graph-change="networkDesignChange"
                     @next="show('result')"
             ></NetworkDesign>
@@ -25,6 +27,7 @@
                     :normalizedOutputs="normalizedOutputs"
                     :metadata="metadata"
                     :networkDesign="networkDesign"
+                    @save="saveFile"
             ></Result>
         </div>
     </div>
@@ -36,6 +39,7 @@
     import NetworkDesign from '../components/NetworkDesign.vue';
     import Result from '../components/Result.vue';
     import Normalizer from '../lib/Normalizer';
+    var FileSaver = require('file-saver');
 
     export default {
         name: 'App',
@@ -74,7 +78,11 @@
             return{
                 configuration: {
                     inputs: 2,
-                    hidden: 3,
+                    hidden: [
+                        {
+                            count: 3
+                        }
+                    ],
                     outputs: 1,
                     iterations: 1000
                 },
@@ -168,6 +176,35 @@
                 this.normalizer = new Normalizer();
                 this.normalizer.setData(this.data);
                 this.normalizer.normalize();
+            },
+            loadFromFile(data){
+                let fr = new FileReader();
+                fr.onload = (data) =>{
+                    try{
+                        let parsedData = JSON.parse(data.currentTarget.result);
+
+                        if(parsedData.configuration !== undefined && parsedData.data !== undefined){
+                            this.configuration = parsedData.configuration;
+                            this.data = parsedData.data;
+                            this.show('result');
+                        }else{
+                            throw "error";
+                        }
+                    }catch(e){
+                        alert("Chyba při načítání")
+                    }
+                };
+                fr.readAsText(data.target.files[0]);
+            },
+            saveFile(){
+                let epoch = new Date().getTime();
+                let data ={
+                    configuration: this.configuration,
+                    data: this.data
+                };
+
+                let file = new File([JSON.stringify(data)], "vi-neural-"+epoch+".vins", {type: "text/plain;charset=utf-8"});
+                FileSaver.saveAs(file);
             }
         }
     }

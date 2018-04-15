@@ -68,15 +68,10 @@
 
     export default {
         name: "NetworkDesign",
-        props: ['configuration', 'inputs', 'outputs'],
+        props: ['configuration', 'inputs', 'outputs', 'hiddenLayers'],
         data(){
             return{
                 design: null,
-                hiddenLayers:[
-                    {
-                        count: 3
-                    }
-                ]
             }
         },
         created(){
