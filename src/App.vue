@@ -166,7 +166,8 @@
                 console.log("Network: ", this.networkDesign);
             },
             normalizeData() {
-                this.normalizer = new Normalizer(this.data);
+                this.normalizer = new Normalizer();
+                this.normalizer.setData(this.data);
                 this.normalizer.normalize();
             }
         }

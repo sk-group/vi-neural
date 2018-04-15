@@ -4,7 +4,7 @@
         <div class="mb">
             <button @click="learn">Learn</button>
         </div>
-        <div v-if="configuration.inputs == 2 && configuration.outputs == 1" class="canvas-container">
+        <div v-if="normalizedInputs == 2 && normalizedOutputs == 1" class="canvas-container">
             <Axis />
             <Axis vertical="true"/>
             <canvas width="500" height="500" ref="canvas"></canvas>
@@ -29,10 +29,10 @@
         <div>
             <table>
                 <td v-for="j in configuration.inputs">
-                    <input v-model.number="testData[j - 1]" />
+                    <input v-model.number="testInput[j - 1]" />
                 </td>
                 <td> => </td>
-                <td>{{ testResult }}</td>
+                <td>{{ testOutput }}</td>
             </table>
         </div>
         <button @click="test()">Test</button>
@@ -41,6 +41,7 @@
 
 <script>
     import Axis from './Axis.vue';
+    import Normalizer from '../lib/Normalizer';
     let synaptic = require('synaptic');
 
     export default {
@@ -53,8 +54,8 @@
             return {
                 network: null,
                 iteration: 0,
-                testData: [],
-                testResult: null,
+                testInput: [],
+                testOutput: null,
                 results: [],
             }
         },
@@ -68,7 +69,11 @@
         },
         methods: {
             test() {
-                this.testResult = this.network.activate(this.testData)
+                let normalizer = new Normalizer();
+                normalizer.setMetadata(this.metadata);
+                let normalizedInput = normalizer.normalizeInput(this.testInput);
+                let output = this.network.activate(normalizedInput);
+                this.testOutput = normalizer.deNormalizeOutput(output);
             },
             createNetwork() {
                 let neurons = [];
@@ -138,7 +143,7 @@
                         this.iteration++;
                     }
                 };
-                if (this.configuration.inputs == 2 && this.configuration.outputs == 1) {
+                if (this.normalizedInputs == 2 && this.normalizedOutputs == 1) {
                     // run animation
                     let canvas = this.$refs.canvas;
                     let res = 5;
