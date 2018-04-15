@@ -47,7 +47,7 @@
 
 <style scoped lang="scss">
     .axis {
-        z-index: 2;
+        z-index: -1;
         position: absolute;
         width: 20px;
         height: 20px;

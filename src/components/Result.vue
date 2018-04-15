@@ -82,7 +82,7 @@
                 // TODO: check when more layers
                 let neurons = [];
                 let inputLayer = new synaptic.Layer();
-                let hiddenLayers = [];
+                let hiddenLayers = []
                 let outputLayer = new synaptic.Layer();
                 for (let node of this.networkDesign.nodes) {
                     let neuron = new synaptic.Neuron();
@@ -93,15 +93,8 @@
                         inputLayer.list.push(neuron);
                     } else if (node.id.startsWith('output')) {
                         outputLayer.list.push(neuron);
-                    } else {
-                        // hidden layer for each hidden neuron, so we can create synaptic.Network
-                        let hiddenLayer = new synaptic.Layer();
-                        hiddenLayer.list.push(neuron);
-                        hiddenLayers.push(hiddenLayer);
                     }
                 }
-
-                //let existingConnections = [];
 
                 let findNeighbors = (neuron) => {
                     let nodeIds = this.networkDesign.getNodeOuts(neuron.nodeId);
@@ -110,22 +103,41 @@
                     });
                 };
 
-                let projectNeurons = (source, neighbors) => {
+                let projectNeurons = (source) => {
+                    let neighbors = findNeighbors(neighbor)
                     for (let neighbor of neighbors) {
                         if (!source.connected(neighbor)) {
                             // connection doesn't exist yet
                             source.project(neighbor);
-                            //existingConnections.push(source.nodeId + ' => ' + neighbor.nodeId);
-                            projectNeurons(neighbor, findNeighbors(neighbor))
+                            projectNeurons(neighbor)
                         }
                     }
                 };
 
-                for (let inputNeuron of inputLayer.list) {
-                    let neighbors = findNeighbors(inputNeuron);
-                    projectNeurons(inputNeuron, neighbors);
-                }
+                let queue = [];
+                let searchedNeuronsIds = [];
 
+                // BFS
+                for (let inputNeuron of inputLayer.list) {
+                    //projectNeurons(inputNeuron); //DFS
+                    queue.push(inputNeuron);
+                    while(queue.length !== 0) {
+                        let neuron = queue.shift();
+                        let hiddenLayer = new synaptic.Layer();
+                        let neighbors = findNeighbors(neuron);
+                        for(let neighbor of neighbors) {
+                            if(searchedNeuronsIds.indexOf(neighbor.nodeId) === -1 && !neighbor.nodeId.startsWith('output')) {
+                                hiddenLayer.list.push(neighbor);
+                                queue.push(neighbor);
+                                searchedNeuronsIds.push(neighbor.nodeId);
+                            }
+                            neuron.project(neighbor);
+                        }
+                        if(hiddenLayer.list.length > 0) {
+                            hiddenLayers.push(hiddenLayer)
+                        }
+                    }
+                }
                 this.network = new synaptic.Network({
                     input: inputLayer,
                     hidden: hiddenLayers,
