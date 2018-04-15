@@ -32,7 +32,7 @@
                 </li>
             </ul>
             <div v-if="tabs.image">
-                <div v-if="configuration.inputs == 2 && configuration.outputs == 1">
+                <div v-if="normalizedInputs == 2 && normalizedOutputs == 1">
                     <div class="form-group">
                         <label for="imageSelectOutput">Output</label>
                         <input v-model.number="imageSelectOutput" id="imageSelectOutput" type="number" class="form-control" max="1"/>
@@ -93,7 +93,7 @@
 
     export default {
         name: "InputData",
-        props: ['configuration', 'data'],
+        props: ['configuration', 'data', 'normalizedInputs', 'normalizedOutputs'],
         data() {
             return {
                 tabs: {

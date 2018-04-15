@@ -45,7 +45,7 @@
 
     export default {
         name: "Result",
-        props: ['configuration', 'data', 'networkDesign'],
+        props: ['configuration', 'data', 'networkDesign', 'metadata', 'normalizedInputs', 'normalizedOutputs'],
         components: {
             Axis
         },

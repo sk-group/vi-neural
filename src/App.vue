@@ -5,19 +5,25 @@
             <InputData
                     v-if="isVisible('inputData')"
                     :configuration="configuration"
+                    :normalizedInputs="normalizedInputs"
+                    :normalizedOutputs="normalizedOutputs"
                     :data="data"
                     @next="show('design')"
             ></InputData>
             <NetworkDesign
                     v-if="isVisible('design')"
-                    :configuration="configuration"
+                    :inputs="normalizedInputs"
+                    :outputs="normalizedOutputs"
                     @graph-change="networkDesignChange"
                     @next="show('result')"
             ></NetworkDesign>
             <Result
                     v-if="isVisible('result')"
                     :configuration="configuration"
-                    :data="data"
+                    :data="normalizedData"
+                    :normalizedInputs="normalizedInputs"
+                    :normalizedOutputs="normalizedOutputs"
+                    :metadata="metadata"
                     :networkDesign="networkDesign"
             ></Result>
         </div>
@@ -48,6 +54,20 @@
                     this.normalizeData();
                 },
                 deep: true
+            }
+        },
+        computed: {
+            normalizedInputs() {
+                return this.normalizer.getInputCount()
+            },
+            normalizedOutputs() {
+                return this.normalizer.getOutputCount()
+            },
+            normalizedData() {
+                return this.normalizer.getNormalizedData()
+            },
+            metadata() {
+                return this.normalizer.getMetadata()
             }
         },
         data(){
