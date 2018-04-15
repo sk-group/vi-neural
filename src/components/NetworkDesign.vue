@@ -21,7 +21,7 @@
             <span
                     class="btn btn-primary"
                     @click="generateGraphStructure()"
-            >Obnovit</span>
+            >Načist</span>
             <span
                     class="btn btn-primary"
                     @click="generateGraphStructure(true, false)"
@@ -40,14 +40,13 @@
 </template>
 
 <script>
-    import NetworkDesign from "../lib/NetworkDesign";
 
     let vis = require('../../node_modules/vis/index');
     let network = null;
-    let dataGlobal = {
+    /*let dataGlobal = {
         nodes: [],
         edges: []
-    };
+    };*/
 
     function destroy() {
         if (network !== null) {
@@ -68,15 +67,14 @@
 
     export default {
         name: "NetworkDesign",
-        props: ['configuration', 'inputs', 'outputs', 'hiddenLayers'],
+        props: ['configuration', 'inputs', 'outputs', 'hiddenLayers', 'dataGlobal'],
         data(){
             return{
-                design: null,
+
             }
         },
         created(){
             this.generateGraphStructure(false);
-            this.design = new NetworkDesign();
         },
         watch:{
             inputs() {
@@ -85,11 +83,9 @@
             outputs() {
                 this.generateGraphStructure();
             },
-            hiddenLayers: {
-                handler(){
-                    this.generateGraphStructure();
-                },
-                deep: true
+            dataGlobal(){
+                console.log('aaa');
+                this.draw();
             }
         },
         mounted(){
@@ -97,13 +93,11 @@
         },
         methods: {
             generateGraphStructure(canDraw = true, hiddenLayers = true){
-                dataGlobal = {
-                    nodes: [],
-                    edges: []
-                }
+                this.dataGlobal.nodes = [];
+                this.dataGlobal.edges = [];
 
                 for(let i = 0; i < this.inputs; i++){
-                    dataGlobal.nodes.push({
+                    this.dataGlobal.nodes.push({
                         id: "input-"+i,
                         label: "Vstup "+(i+1),
                         fixed: true,
@@ -114,7 +108,7 @@
                 }
 
                 for(let i = 0; i < this.outputs; i++){
-                    dataGlobal.nodes.push({
+                    this.dataGlobal.nodes.push({
                         id: "output-"+i,
                         label: "Výstup "+(i+1),
                         fixed: true,
@@ -131,14 +125,14 @@
 
                         for(let y = 0; y < this.hiddenLayers[it].count; y++){
                             nodeId = "hidden-"+it+"-"+y;
-                            dataGlobal.nodes.push({
+                            this.dataGlobal.nodes.push({
                                 id: nodeId,
                                 label: "",
                             });
 
                             if(it == 0){
                                 for(let itInput = 0; itInput < this.inputs; itInput++){
-                                    dataGlobal.edges.push({
+                                    this.dataGlobal.edges.push({
                                         from: "input-"+itInput,
                                         to: nodeId,
                                         id: getUid(),
@@ -148,7 +142,7 @@
                             }else{
                                 for(let itNodeBefore = 0; itNodeBefore < this.hiddenLayers[it-1].count; itNodeBefore++){
 
-                                    dataGlobal.edges.push({
+                                    this.dataGlobal.edges.push({
                                         from: "hidden-"+(it-1)+"-"+itNodeBefore,
                                         to: nodeId,
                                         id: getUid(),
@@ -160,7 +154,7 @@
 
                             if(it == (this.hiddenLayers.length-1)){
                                 for(let itOutput = 0; itOutput < this.outputs; itOutput++){
-                                    dataGlobal.edges.push({
+                                    this.dataGlobal.edges.push({
                                         from: nodeId,
                                         to: "output-"+itOutput,
                                         id: getUid(),
@@ -248,16 +242,14 @@
                         }
                     }
                 };
-                network = new vis.Network(container, dataGlobal, options);
+                network = new vis.Network(container, this.dataGlobal, options);
                 this.emmitData({
                     nodes: network.body.data.nodes.get(),
                     edges: network.body.data.edges.get()
                 });
             },
             emmitData(data){
-                this.design.setEdges(data.edges);
-                this.design.setNodes(data.nodes);
-                this.$emit('graph-change', this.design);
+                this.$emit('graph-change', data);
             },
             addHiddenLayer(){
                 this.hiddenLayers.push({

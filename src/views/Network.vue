@@ -16,6 +16,7 @@
                     :inputs="normalizedInputs"
                     :outputs="normalizedOutputs"
                     :hiddenLayers="configuration.hidden"
+                    :dataGlobal="graphRaw"
                     @graph-change="networkDesignChange"
                     @next="show('result')"
             ></NetworkDesign>
@@ -37,9 +38,10 @@
     import Progress from '../components/Progress.vue';
     import InputData from '../components/InputData.vue';
     import NetworkDesign from '../components/NetworkDesign.vue';
+    import NetworkDesignClass from '../lib/NetworkDesign';
     import Result from '../components/Result.vue';
     import Normalizer from '../lib/Normalizer';
-    var FileSaver = require('file-saver');
+    let FileSaver = require('file-saver');
 
     export default {
         name: 'App',
@@ -84,6 +86,10 @@
         },
         data(){
             return{
+                graphRaw: {
+                    nodes: [],
+                    edges: []
+                },
                 configuration: {
                     inputs: 2,
                     hidden: [
@@ -180,7 +186,12 @@
                 return this.appFlow[name].active || process.env.NODE_ENV === 'development';
             },
             networkDesignChange(data){
-                this.networkDesign = data;
+                this.graphRaw.edges = data.edges;
+                this.graphRaw.nodes = data.nodes;
+
+                this.networkDesign = new NetworkDesignClass();
+                this.networkDesign.setEdges(data.edges);
+                this.networkDesign.setNodes(data.nodes);
             },
             normalizeData() {
                 this.normalizer = new Normalizer();
@@ -193,9 +204,10 @@
                     try{
                         let parsedData = JSON.parse(data.currentTarget.result);
 
-                        if(parsedData.configuration !== undefined && parsedData.data !== undefined){
+                        if(parsedData.configuration !== undefined && parsedData.data !== undefined && parsedData.graphRaw !== undefined){
                             this.configuration = parsedData.configuration;
                             this.data = parsedData.data;
+                            this.graphRaw = parsedData.graphRaw;
                             this.show('result');
                         }else{
                             throw "error";
@@ -210,7 +222,8 @@
                 let epoch = new Date().getTime();
                 let data ={
                     configuration: this.configuration,
-                    data: this.data
+                    data: this.data,
+                    graphRaw: this.graphRaw
                 };
 
                 let file = new File([JSON.stringify(data)], "vi-neural-"+epoch+".vins", {type: "text/plain;charset=utf-8"});
