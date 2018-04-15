@@ -44,11 +44,10 @@
 
     let vis = require('../../node_modules/vis/index');
     let network = null;
-    let dataGlobalDefault = {
+    let dataGlobal = {
         nodes: [],
         edges: []
     };
-    let dataGlobal = JSON.parse(JSON.stringify(dataGlobalDefault));
 
     function destroy() {
         if (network !== null) {
@@ -113,7 +112,7 @@
                         id: "input-"+i,
                         label: "Vstup "+(i+1),
                         fixed: true,
-                        x: 0,
+                        x: -450,
                         y: 100*i,
                         color: '#8cffaa'
                     });
@@ -124,7 +123,7 @@
                         id: "output-"+i,
                         label: "Výstup "+(i+1),
                         fixed: true,
-                        x: 700,
+                        x: 450,
                         y: 100*i,
                         color: '#ff5b63'
                     });
@@ -190,6 +189,13 @@
 
                 let options = {
                     layout: { improvedLayout: false },
+                    physics: {
+                        barnesHut:{
+                            centralGravity: 0.5,
+                            springLength: 50,
+                            springConstant: 0.02
+                        }
+                    },
                     locale: 'en',
                     manipulation: {
                         addNode: (data, callback) =>{
