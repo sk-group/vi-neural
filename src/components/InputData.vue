@@ -125,10 +125,17 @@
         },
         methods: {
             addData() {
-                this.data.push({
+                let newData = {
                     input: [],
                     output: []
-                });
+                };
+                for(let i = 0; i < this.configuration.inputs; i++) {
+                    newData.input.push("");
+                }
+                for(let i = 0; i < this.configuration.outputs; i++) {
+                    newData.output.push("");
+                }
+                this.data.push(newData);
             },
             removeData(index) {
                 this.data.splice(index, 1);

@@ -1,11 +1,32 @@
 export default class Normalizer {
     setData(data) {
+        data = JSON.parse(JSON.stringify(data));
+        for(let i = 0; i < data.length; i++) {
+            let remove = false;
+            for(let input of data[i].input) {
+                if(input === "") {
+                    remove = true;
+                }
+            }
+            for(let output of data[i].output) {
+                if(output === "") {
+                    remove = true;
+                }
+            }
+            if(remove) {
+                data.splice(i, 1);
+                i--;
+            }
+        }
         this.data = data;
     }
 
     normalize() {
+        if(this.data.length === 0) {
+            return;
+        }
         if(!this.data) {
-            console.error('No data to normalize.')
+            console.error('No data to normalize.');
             return;
         }
         this.normalizedData = [];
@@ -36,7 +57,7 @@ export default class Normalizer {
                         let max = this.metadata.output[i].max;
                         let diff = max - min;
                         let minmax = 0;
-                        if(diff !== 0) {
+                        if (diff !== 0) {
                             minmax = (data.output[i] - min) / diff;
                         }
                         output.push(minmax);
@@ -52,6 +73,7 @@ export default class Normalizer {
                 output: output
             });
         }
+        console.log('metadata', this.metadata);
     };
 
     normalizeInput(input) {
@@ -78,6 +100,7 @@ export default class Normalizer {
         for(let j = 0; j < this.metadata.output.length; j++) {
             let outputMetadata = this.metadata.output[j];
             if(outputMetadata.type === 'number') {
+                //de minmax
                 let min = outputMetadata.min;
                 let max = outputMetadata.max;
                 let diff = max - min;
@@ -87,22 +110,48 @@ export default class Normalizer {
                 }
                 i++;
             } else if (outputMetadata.type === 'string') {
+                //de binarize
+                let binarized = outputMetadata.binarized;
+                let binaryLength = Object.keys(binarized).length;
 
+                let binaryOutput = output.slice(i, i + binaryLength);
+                binaryOutput = binaryOutput.map((binary) => {
+                    return Math.round(binary);
+                });
+                let oneIndex = binaryOutput.indexOf(1);
+                for(let key in binarized) {
+                    if(!binarized.hasOwnProperty(key)) {
+                        continue;
+                    }
+                    if(binarized[key][oneIndex] === 1) {
+                        denormalizedOutput[j] = key;
+                        break;
+                    }
+                }
+                i += binaryLength;
             }
         }
         return denormalizedOutput;
     }
 
     getNormalizedData() {
+        if(this.data.length === 0) {
+            return [];
+        }
         return this.normalizedData;
     }
 
     getInputCount() {
-        console.log(this.normalizedData);
+        if(this.data.length === 0) {
+            return 0;
+        }
         return this.normalizedData[0].input.length;
     }
 
     getOutputCount() {
+        if(this.data.length === 0) {
+            return 0;
+        }
         return this.normalizedData[0].output.length;
     }
 
@@ -145,6 +194,7 @@ export default class Normalizer {
             }
             this.metadata.output.push(metadata);
         }
+        console.log('distinct', distinct);
     }
 
     getTypes() {
@@ -227,7 +277,7 @@ export default class Normalizer {
         for (let i = 0; i < this.data[0].input.length; i++) {
             distinct.input[i] = [];
             for (let data of this.data) {
-                if (distinct.input[i].indexOf(data.input[i]) === -1) {
+                if (distinct.input[i].indexOf(data.input[i].toString()) === -1) {
                     distinct.input[i].push(data.input[i].toString());
                 }
             }
@@ -235,7 +285,7 @@ export default class Normalizer {
         for (let i = 0; i < this.data[0].output.length; i++) {
             distinct.output[i] = [];
             for (let data of this.data) {
-                if (distinct.output[i].indexOf(data.output[i]) === -1) {
+                if (distinct.output[i].indexOf(data.output[i].toString()) === -1) {
                     distinct.output[i].push(data.output[i].toString());
                 }
             }

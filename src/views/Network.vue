@@ -163,7 +163,6 @@
             },
             networkDesignChange(data){
                 this.networkDesign = data;
-                console.log("Network: ", this.networkDesign);
             },
             normalizeData() {
                 this.normalizer = new Normalizer();
