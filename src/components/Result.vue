@@ -106,6 +106,7 @@
 </template>
 
 <script>
+    //  TODO: fix axes labels (toFixed())
     import Axis from './Axis.vue';
     import Normalizer from '../lib/Normalizer';
 
@@ -134,28 +135,32 @@
             xMin() {
                 let xMin = 0;
                 if(this.metadata && this.metadata.input[0]) {
-                    return this.metadata.input[0].min
+                    let min = this.metadata.input[0].min;
+                    return min < 1 ? xMin : min;
                 }
                 return xMin;
             },
             xMax() {
                 let xMax = 1;
                 if(this.metadata && this.metadata.input[0]) {
-                    return this.metadata.input[0].max
+                    let max = this.metadata.input[0].max;
+                    return max < 1 ? xMax : max;
                 }
                 return xMax;
             },
             yMin() {
                 let yMin = 0;
                 if(this.metadata && this.metadata.input[1]) {
-                    return this.metadata.input[1].min
+                    let min = this.metadata.output[0].min;
+                    return min < 1 ? yMin : min;
                 }
                 return yMin;
             },
             yMax() {
                 let yMax = 1;
                 if(this.metadata && this.metadata.input[1]) {
-                    return this.metadata.input[1].max
+                    let max = this.metadata.output[0].max;
+                    return max < 1 ? yMax : max;
                 }
                 return yMax;
             }
@@ -201,8 +206,8 @@
                     });
                 };
 
-                let projectNeurons = (source) => {
-                    let neighbors = findNeighbors(neighbor)
+                /*let projectNeurons = (source) => {
+                    let neighbors = findNeighbors(neighbor);
                     for (let neighbor of neighbors) {
                         if (!source.connected(neighbor)) {
                             // connection doesn't exist yet
@@ -210,7 +215,7 @@
                             projectNeurons(neighbor)
                         }
                     }
-                };
+                };*/
 
                 let queue = [];
                 let searchedNeuronsIds = [];
@@ -240,7 +245,7 @@
                     input: inputLayer,
                     hidden: hiddenLayers,
                     output: outputLayer
-                })
+                });
             },
             learn() {
                 this.stop = false;
@@ -277,10 +282,34 @@
                         for (let x = 0; x <= canvas.width; x += res) {
                             for (let y = 0; y <= canvas.height; y += res) {
                                 let alpha = this.network.activate([x / canvas.width, y / canvas.height]);
-                                ctx.fillStyle = 'rgba(255, 255, 255, ' + alpha + ')';
+                                ctx.fillStyle = 'rgba(255, 255, 255, ' + alpha[0] + ')';
                                 ctx.fillRect(x, y, res, res);
                             }
                         }
+                        let line = (x1, neuron) => {
+                            let w = [];
+                            for(let i in neuron.connections.inputs) {
+                                if(!neuron.connections.inputs.hasOwnProperty(i)) {
+                                    continue;
+                                }
+                                w.push(neuron.connections.inputs[i].weight);
+                            }
+                            return (neuron.bias - w[0] * x1) / w[1];
+                        };
+                        // draw lines
+                        this.network.restore();
+                        for(let neuron of this.network.layers.hidden[0].list) {
+                            // TODO: fix line formula
+                            ctx.strokeStyle = 'yellow';
+                            ctx.beginPath();
+                            let x1 = 0;
+                            let y1 = line(0, neuron);
+                            ctx.moveTo(x1, y1 * canvas.height);
+                            let y2 = line(1, neuron);
+                            ctx.lineTo(canvas.width, y2 * canvas.height);
+                            ctx.stroke();
+                        }
+                        // TODO: draw data
                         if (!this.stop) {
                             requestAnimationFrame(draw);
                         }
