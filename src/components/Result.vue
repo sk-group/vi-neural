@@ -51,11 +51,14 @@
             <button class="btn btn-danger" @click="stop = true">Stop</button>
         </div>
         <div v-if="normalizedInputs == 2 && normalizedOutputs == 1" class="canvas-container">
-            <Axis :min="xMin" :max="xMax"/>
-            <Axis vertical="true" :min="yMin" :max="yMax"/>
-            <canvas width="500" height="500" ref="canvas"></canvas>
-            <Axis bottom="true" :min="xMin" :max="xMax"/>
-            <Axis vertical="true" bottom="true" :min="yMin" :max="yMax"/>
+            <canvas width="1000" height="800" ref="canvas"></canvas>
+            <div class="image-placeholder-container">
+                <Axis :min="xMin" :max="xMax" white="true"/>
+                <Axis vertical="true" :min="yMin" :max="yMax" white="true"/>
+                <div class="image-placeholder" ref="imagePlaceholder"/>
+                <Axis bottom="true" :min="xMin" :max="xMax" white="true"/>
+                <Axis vertical="true" bottom="true" :min="yMin" :max="yMax" white="true"/>
+            </div>
         </div>
         <div v-else v-for="result in results">
             <table class="result-table">
@@ -106,7 +109,6 @@
 </template>
 
 <script>
-    //  TODO: fix axes labels (toFixed())
     import Axis from './Axis.vue';
     import Normalizer from '../lib/Normalizer';
 
@@ -134,7 +136,7 @@
         computed: {
             xMin() {
                 let xMin = 0;
-                if(this.metadata && this.metadata.input[0]) {
+                if (this.metadata && this.metadata.input[0]) {
                     let min = this.metadata.input[0].min;
                     return min < 1 ? xMin : min;
                 }
@@ -142,7 +144,7 @@
             },
             xMax() {
                 let xMax = 1;
-                if(this.metadata && this.metadata.input[0]) {
+                if (this.metadata && this.metadata.input[0]) {
                     let max = this.metadata.input[0].max;
                     return max < 1 ? xMax : max;
                 }
@@ -150,7 +152,7 @@
             },
             yMin() {
                 let yMin = 0;
-                if(this.metadata && this.metadata.input[1]) {
+                if (this.metadata && this.metadata.input[1]) {
                     let min = this.metadata.output[0].min;
                     return min < 1 ? yMin : min;
                 }
@@ -158,7 +160,7 @@
             },
             yMax() {
                 let yMax = 1;
-                if(this.metadata && this.metadata.input[1]) {
+                if (this.metadata && this.metadata.input[1]) {
                     let max = this.metadata.output[0].max;
                     return max < 1 ? yMax : max;
                 }
@@ -275,38 +277,42 @@
                     let canvas = this.$refs.canvas;
                     let res = 5;
                     let ctx = canvas.getContext("2d");
+                    let width = this.$refs.imagePlaceholder.clientWidth;
+                    let height = this.$refs.imagePlaceholder.clientHeight;
+                    let xOffset = (canvas.width - width) / 2;
+                    let yOffset = (canvas.height - height) / 2;
+                    let lineX1 = -width / canvas.width;
+                    let lineX2 = 1 + width / canvas.width;
                     let draw = () => {
                         iterate();
                         ctx.fillStyle = "black";
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        for (let x = 0; x <= canvas.width; x += res) {
-                            for (let y = 0; y <= canvas.height; y += res) {
-                                let alpha = this.network.activate([x / canvas.width, y / canvas.height]);
+                        for (let x = 0; x <= width; x += res) {
+                            for (let y = 0; y <= height; y += res) {
+                                let alpha = this.network.activate([x / width, y / height]);
                                 ctx.fillStyle = 'rgba(255, 255, 255, ' + alpha[0] + ')';
-                                ctx.fillRect(x, y, res, res);
+                                ctx.fillRect(x + xOffset, y + yOffset, res, res);
                             }
                         }
                         let line = (x1, neuron) => {
                             let w = [];
-                            for(let i in neuron.connections.inputs) {
-                                if(!neuron.connections.inputs.hasOwnProperty(i)) {
+                            for (let i in neuron.connections.inputs) {
+                                if (!neuron.connections.inputs.hasOwnProperty(i)) {
                                     continue;
                                 }
                                 w.push(neuron.connections.inputs[i].weight);
                             }
-                            return (neuron.bias - w[0] * x1) / w[1];
+                            return -w[0] / w[1] * x1 - neuron.bias / w[1];
                         };
                         // draw lines
                         this.network.restore();
-                        for(let neuron of this.network.layers.hidden[0].list) {
-                            // TODO: fix line formula
+                        for (let neuron of this.network.layers.hidden[0].list) {
                             ctx.strokeStyle = 'yellow';
                             ctx.beginPath();
-                            let x1 = 0;
-                            let y1 = line(0, neuron);
-                            ctx.moveTo(x1, y1 * canvas.height);
-                            let y2 = line(1, neuron);
-                            ctx.lineTo(canvas.width, y2 * canvas.height);
+                            let lineY1 = line(lineX1, neuron);
+                            ctx.moveTo(0, lineY1 * height + yOffset);
+                            let lineY2 = line(lineX2, neuron);
+                            ctx.lineTo(canvas.width, lineY2 * height + yOffset);
                             ctx.stroke();
                         }
                         // TODO: draw data
@@ -337,16 +343,27 @@
     }
 </script>
 
-<style scoped lang="scss">
+<style lang="scss">
     .canvas-container {
         position: relative;
-        margin: 0 auto;
-        width: 540px;
-        height: 540px;
-        padding: 20px;
 
         canvas {
             transform: scaleY(-1);
+        }
+
+        .image-placeholder-container {
+            position: absolute;
+            top: calc(50% - 277px);
+            left: calc(50% - 268px);
+            width: 540px;
+            height: 540px;
+            padding: 20px;
+            z-index: 2;
+
+            .image-placeholder {
+                width: 500px;
+                height: 500px;
+            }
         }
     }
 

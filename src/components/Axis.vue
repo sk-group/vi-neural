@@ -1,7 +1,8 @@
 <template>
     <div class="axis" v-bind:class="{
     vertical: this.vertical,
-    bottom: this.bottom}" ref="axis">
+    bottom: this.bottom,
+    white: this.white}" ref="axis">
         <span class="line"></span>
         <span class="label zero">{{ min }}</span>
         <span class="rule" v-for="rule in rules" :style="{
@@ -13,7 +14,7 @@
 
 <script>
     export default {
-        props: ['vertical', 'size', 'bottom', 'min', 'max'],
+        props: ['vertical', 'size', 'white', 'bottom', 'min', 'max'],
         mounted() {
             let axis = this.$refs.axis;
             if (this.vertical) {
@@ -133,6 +134,15 @@
                     left: 20px;
                     right: auto;
                 }
+            }
+        }
+
+        &.white {
+            color: white;
+
+            .line,
+            .rule {
+                background: white;
             }
         }
     }
