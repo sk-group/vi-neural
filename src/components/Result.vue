@@ -11,7 +11,7 @@
             <div class="col-md-6">
                 <div class="form-group">
                     <label for="speed">Rychlost animace (počet iterací ve snímku)</label>
-                    <input v-model.number="configuration.speed" id="speed" type="number" class="form-control" step="10"/>
+                    <input v-model.number="configuration.speed" id="speed" type="number" class="form-control" step="10" min="1"/>
                 </div>
             </div>
             <div class="col-md-6">
@@ -146,7 +146,8 @@
                 activationFunctions: synaptic.Neuron.squash,
                 costFunctions: synaptic.Trainer.cost,
                 error: 1,
-                showData: true
+                showData: true,
+                inputConnectedNeurons: []
             }
         },
         computed: {
@@ -233,6 +234,7 @@
 
                 let queue = [];
                 let searchedNeuronsIds = [];
+                this.inputConnectedNeurons = [];
 
                 // BFS
                 for (let inputNeuron of inputLayer.list) {
@@ -242,8 +244,13 @@
                         let neuron = queue.shift();
                         let hiddenLayer = new synaptic.Layer();
                         let neighbors = findNeighbors(neuron);
+                        let isInputNeuron = inputLayer.list.indexOf(neuron) !== -1;
                         for (let neighbor of neighbors) {
                             if (searchedNeuronsIds.indexOf(neighbor.nodeId) === -1 && !neighbor.nodeId.startsWith('output')) {
+                                if(isInputNeuron) {
+                                    // neighbor is connected to input
+                                    this.inputConnectedNeurons.push(neighbor);
+                                }
                                 hiddenLayer.list.push(neighbor);
                                 queue.push(neighbor);
                                 searchedNeuronsIds.push(neighbor.nodeId);
@@ -297,6 +304,7 @@
                     let lineX2 = 1 + width / canvas.width;
                     let draw = () => {
                         iterate();
+                        // draw network outputs
                         ctx.fillStyle = "black";
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                         for (let x = 0; x <= width; x += res) {
@@ -306,6 +314,7 @@
                                 ctx.fillRect(x + xOffset, y + yOffset, res, res);
                             }
                         }
+                        // line function
                         let line = (x1, neuron) => {
                             let w = [];
                             for (let i in neuron.connections.inputs) {
@@ -318,8 +327,9 @@
                         };
                         // draw lines
                         this.network.restore();
-                        for (let neuron of this.network.layers.hidden[0].list) {
-                            ctx.strokeStyle = 'green';
+                        for (let neuron of this.inputConnectedNeurons) {
+                            ctx.strokeStyle = 'dodgerblue';
+                            ctx.lineWidth = 2;
                             ctx.beginPath();
                             let lineY1 = line(lineX1, neuron);
                             ctx.moveTo(0, lineY1 * height + yOffset);
@@ -387,7 +397,7 @@
                     width: 11px;
                     height: 11px;
                     border-radius: 50%;
-                    border: 1px solid green;
+                    border: 2px solid dodgerblue;
                     margin-left: -5.5px;
                     margin-top: -5.5px;
                     position: absolute;

@@ -12,7 +12,7 @@
 </template>
 
 <script>
-
+    // TODO: comments
     export default {
         name: 'App',
         data() {

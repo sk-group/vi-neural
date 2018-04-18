@@ -239,7 +239,7 @@
                 width: 11px;
                 height: 11px;
                 border-radius: 50%;
-                border: 1px solid black;
+                border: 2px solid dodgerblue;
                 margin-left: -5.5px;
                 margin-top: -5.5px;
                 position: absolute;
