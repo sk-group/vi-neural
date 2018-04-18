@@ -51,11 +51,25 @@
             <button class="btn btn-danger" @click="stop = true">Stop</button>
         </div>
         <div v-if="normalizedInputs == 2 && normalizedOutputs == 1" class="canvas-container">
+            <div class="form-check show-data">
+                <input class="form-check-input" type="checkbox" v-model="showData" id="showData">
+                <label class="form-check-label" for="showData">
+                    Zobrazit data
+                </label>
+            </div>
             <canvas width="1000" height="800" ref="canvas"></canvas>
-            <div class="image-placeholder-container">
+            <div class="image-data-container">
                 <Axis :min="xMin" :max="xMax" white="true"/>
                 <Axis vertical="true" :min="yMin" :max="yMax" white="true"/>
-                <div class="image-placeholder" ref="imagePlaceholder"/>
+                <div class="image-data" ref="imageData">
+                    <div v-if="showData">
+                        <span v-for="data in this.data" class="point" :style="{
+                            left: data.input[0] * 100 + '%',
+                            top: data.input[1] * 100 +'%',
+                            backgroundColor: 'rgba(' + Math.round(255 * data.output[0]) + ',' + Math.round(255 * data.output[0]) + ',' + Math.round(255 * data.output[0]) + ',1)' }"
+                        />
+                    </div>
+                </div>
                 <Axis bottom="true" :min="xMin" :max="xMax" white="true"/>
                 <Axis vertical="true" bottom="true" :min="yMin" :max="yMax" white="true"/>
             </div>
@@ -109,6 +123,7 @@
 </template>
 
 <script>
+    // TODO: make reposnsive, at least for tablet
     import Axis from './Axis.vue';
     import Normalizer from '../lib/Normalizer';
 
@@ -130,39 +145,36 @@
                 stop: false,
                 activationFunctions: synaptic.Neuron.squash,
                 costFunctions: synaptic.Trainer.cost,
-                error: 1
+                error: 1,
+                showData: true
             }
         },
         computed: {
             xMin() {
                 let xMin = 0;
                 if (this.metadata && this.metadata.input[0]) {
-                    let min = this.metadata.input[0].min;
-                    return min < 1 ? xMin : min;
+                    return this.metadata.input[0].min;
                 }
                 return xMin;
             },
             xMax() {
                 let xMax = 1;
                 if (this.metadata && this.metadata.input[0]) {
-                    let max = this.metadata.input[0].max;
-                    return max < 1 ? xMax : max;
+                    return this.metadata.input[0].max
                 }
                 return xMax;
             },
             yMin() {
                 let yMin = 0;
                 if (this.metadata && this.metadata.input[1]) {
-                    let min = this.metadata.output[0].min;
-                    return min < 1 ? yMin : min;
+                    return this.metadata.output[0].min;
                 }
                 return yMin;
             },
             yMax() {
                 let yMax = 1;
                 if (this.metadata && this.metadata.input[1]) {
-                    let max = this.metadata.output[0].max;
-                    return max < 1 ? yMax : max;
+                    return this.metadata.output[0].max;
                 }
                 return yMax;
             }
@@ -277,8 +289,8 @@
                     let canvas = this.$refs.canvas;
                     let res = 5;
                     let ctx = canvas.getContext("2d");
-                    let width = this.$refs.imagePlaceholder.clientWidth;
-                    let height = this.$refs.imagePlaceholder.clientHeight;
+                    let width = this.$refs.imageData.clientWidth;
+                    let height = this.$refs.imageData.clientHeight;
                     let xOffset = (canvas.width - width) / 2;
                     let yOffset = (canvas.height - height) / 2;
                     let lineX1 = -width / canvas.width;
@@ -307,7 +319,7 @@
                         // draw lines
                         this.network.restore();
                         for (let neuron of this.network.layers.hidden[0].list) {
-                            ctx.strokeStyle = 'yellow';
+                            ctx.strokeStyle = 'green';
                             ctx.beginPath();
                             let lineY1 = line(lineX1, neuron);
                             ctx.moveTo(0, lineY1 * height + yOffset);
@@ -315,7 +327,6 @@
                             ctx.lineTo(canvas.width, lineY2 * height + yOffset);
                             ctx.stroke();
                         }
-                        // TODO: draw data
                         if (!this.stop) {
                             requestAnimationFrame(draw);
                         }
@@ -351,7 +362,13 @@
             transform: scaleY(-1);
         }
 
-        .image-placeholder-container {
+        .show-data {
+            position: absolute;
+            right: 0;
+            bottom: calc(100% + 10px);
+        }
+
+        .image-data-container {
             position: absolute;
             top: calc(50% - 277px);
             left: calc(50% - 268px);
@@ -360,9 +377,22 @@
             padding: 20px;
             z-index: 2;
 
-            .image-placeholder {
+            .image-data {
+                transform: scaleY(-1);
+                position: relative;
                 width: 500px;
                 height: 500px;
+
+                .point {
+                    width: 11px;
+                    height: 11px;
+                    border-radius: 50%;
+                    border: 1px solid green;
+                    margin-left: -5.5px;
+                    margin-top: -5.5px;
+                    position: absolute;
+                    background-color: black;
+                }
             }
         }
     }

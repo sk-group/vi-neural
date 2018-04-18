@@ -240,6 +240,9 @@ export default class Normalizer {
                     mins.input[i] = data.input[i];
                 }
             }
+            if(mins.input[i] < 1) {
+                mins.input[i] = 0;
+            }
         }
         for (let i = 0; i < this.data[0].output.length; i++) {
             mins.output[i] = this.data[0].output[i];
@@ -247,6 +250,9 @@ export default class Normalizer {
                 if (data.output[i] < mins.output[i]) {
                     mins.output[i] = data.output[i];
                 }
+            }
+            if(mins.output[i] < 1) {
+                mins.output[i] = 0;
             }
         }
         return mins;
@@ -264,6 +270,9 @@ export default class Normalizer {
                     maxes.input[i] = data.input[i];
                 }
             }
+            if(maxes.input[i] < 1) {
+                maxes.input[i] = 1;
+            }
         }
         for (let i = 0; i < this.data[0].output.length; i++) {
             maxes.output[i] = this.data[0].output[i];
@@ -271,6 +280,9 @@ export default class Normalizer {
                 if (data.output[i] > maxes.output[i]) {
                     maxes.output[i] = data.output[i];
                 }
+            }
+            if(maxes.output[i] < 1) {
+                maxes.output[i] = 1;
             }
         }
         return maxes;
