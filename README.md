@@ -1,5 +1,7 @@
 # vi-neural
 
+[![volkswagen status](https://auchenberg.github.io/volkswagen/volkswargen_ci.svg?v=1)](https://github.com/auchenberg/volkswagen)
+
 School project for class Výpočetní inteligence at University of South Bohemia, Czech Republic.
 
 Kind of works as a graphical UI for the awesome synaptic.js library.\
