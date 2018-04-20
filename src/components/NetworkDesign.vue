@@ -4,7 +4,7 @@
         <h4>Vnitřní vrstvy</h4>
         <div class="hidden-layers">
             <div class="row">
-                <div class="col" v-for="(item, index) in hiddenLayers">
+                <div class="col" v-for="(item, index) in configuration.hiddenLayers">
                     <div class="input-group mb-2">
                         <input type="number" v-model="item.count" class="form-control"/>
                         <div class="input-group-append">
@@ -15,6 +15,12 @@
                 <div class="col-1 text-right">
                     <span class="btn btn-success" @click="addHiddenLayer">+</span>
                 </div>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" v-model="configuration.hopfield" id="hopfield">
+                <label class="form-check-label" for="hopfield">
+                    Hopfield
+                </label>
             </div>
         </div>
         <div class="text-center mb-3">
@@ -68,7 +74,7 @@
 
     export default {
         name: "NetworkDesign",
-        props: ['configuration', 'inputs', 'outputs', 'hiddenLayers', 'dataGlobal'],
+        props: ['configuration', 'inputs', 'outputs', 'dataGlobal'],
         data() {
             return {}
         },
@@ -120,14 +126,27 @@
 
                 if (hiddenLayers) {
                     let nodeId = "";
-                    for (let it in this.hiddenLayers) {
+                    for (let it in this.configuration.hiddenLayers) {
 
-                        for (let y = 0; y < this.hiddenLayers[it].count; y++) {
+                        for (let y = 0; y < this.configuration.hiddenLayers[it].count; y++) {
                             nodeId = "hidden-" + it + "-" + y;
                             this.dataGlobal.nodes.push({
                                 id: nodeId,
                                 label: "",
                             });
+
+                            if(this.configuration.hopfield) {
+                                for(let j = 0; j < this.configuration.hiddenLayers[it].count; j++) {
+                                    if(y != j) {
+                                        this.dataGlobal.edges.push({
+                                            from: nodeId,
+                                            to: "hidden-" + it + "-" + j,
+                                            id: getUid(),
+                                            arrows: "to"
+                                        });
+                                    }
+                                }
+                            }
 
                             if (it == 0) {
                                 for (let itInput = 0; itInput < this.inputs; itInput++) {
@@ -139,7 +158,7 @@
                                     });
                                 }
                             } else {
-                                for (let itNodeBefore = 0; itNodeBefore < this.hiddenLayers[it - 1].count; itNodeBefore++) {
+                                for (let itNodeBefore = 0; itNodeBefore < this.configuration.hiddenLayers[it - 1].count; itNodeBefore++) {
 
                                     this.dataGlobal.edges.push({
                                         from: "hidden-" + (it - 1) + "-" + itNodeBefore,
@@ -151,7 +170,7 @@
                             }
 
 
-                            if (it == (this.hiddenLayers.length - 1)) {
+                            if (it == (this.configuration.hiddenLayers.length - 1)) {
                                 for (let itOutput = 0; itOutput < this.outputs; itOutput++) {
                                     this.dataGlobal.edges.push({
                                         from: nodeId,
@@ -269,12 +288,12 @@
                 this.$emit('graph-change', data);
             },
             addHiddenLayer() {
-                this.hiddenLayers.push({
+                this.configuration.hiddenLayers.push({
                     count: 2
                 });
             },
             removeHiddenLayer(index) {
-                this.hiddenLayers.splice(index, 1);
+                this.configuration.hiddenLayers.splice(index, 1);
             }
         }
     }

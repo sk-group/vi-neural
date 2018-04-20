@@ -15,7 +15,7 @@
                     v-if="isVisible('design')"
                     :inputs="normalizedInputs"
                     :outputs="normalizedOutputs"
-                    :hiddenLayers="configuration.hidden"
+                    :configuration="configuration"
                     :dataGlobal="graphRaw"
                     @graph-change="networkDesignChange"
                     @next="show('result')"
@@ -92,11 +92,12 @@
                 },
                 configuration: {
                     inputs: 2,
-                    hidden: [
+                    hiddenLayers: [
                         {
                             count: 3
                         }
                     ],
+                    hopfield: false,
                     outputs: 1,
                     iterations: 1000,
                     speed: 10,
