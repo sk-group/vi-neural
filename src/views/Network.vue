@@ -10,6 +10,7 @@
                     :data="data"
                     @next="show('design')"
                     @load="loadFromFile"
+                    @load-dummy="loadConfig"
                     @load-csv="loadFromFileCsv"
             ></InputData>
             <NetworkDesign
@@ -208,20 +209,23 @@
                 fr.onload = (data) =>{
                     try{
                         let parsedData = JSON.parse(data.currentTarget.result);
-
-                        if(parsedData.configuration !== undefined && parsedData.data !== undefined && parsedData.graphRaw !== undefined){
-                            this.configuration = parsedData.configuration;
-                            this.data = parsedData.data;
-                            this.graphRaw = parsedData.graphRaw;
-                            this.show('result');
-                        }else{
-                            throw "error";
-                        }
+                        this.loadConfig(parsedData);
                     }catch(e){
                         alert("Chyba při načítání")
                     }
+                    this.loadConfig(data);
                 };
                 fr.readAsText(data.target.files[0]);
+            },
+            loadConfig(parsedData){
+                if(parsedData.configuration !== undefined && parsedData.data !== undefined && parsedData.graphRaw !== undefined){
+                    this.configuration = parsedData.configuration;
+                    this.data = parsedData.data;
+                    this.graphRaw = parsedData.graphRaw;
+                    this.show('result');
+                }else{
+                    throw "error";
+                }
             },
             loadFromFileCsv(data){
                 let fr = new FileReader();

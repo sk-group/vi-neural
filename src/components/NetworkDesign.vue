@@ -89,7 +89,6 @@
                 this.generateGraphStructure();
             },
             dataGlobal() {
-                console.log('aaa');
                 this.draw();
             }
         },
