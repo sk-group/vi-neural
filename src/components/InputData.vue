@@ -24,12 +24,16 @@
                 <li class="nav-item" @click="setActiveTab('custom')">
                     <span class="nav-link cursor-pointer" :class="{'active': tabs.custom}">Vlastní data</span>
                 </li>
+                <li class="nav-item" @click="setActiveTab('csv')">
+                    <span class="nav-link cursor-pointer" :class="{'active': tabs.csv}">Vložit csv data</span>
+                </li>
                 <li class="nav-item" @click="setActiveTab('importTab')">
                     <span class="nav-link cursor-pointer" :class="{'active': tabs.importTab}">Vložit konfigurační soubor</span>
                 </li>
             </ul>
             <div v-if="tabs.image">
                 <div v-if="normalizedInputs == 2 && normalizedOutputs == 1">
+                    <!--TODO add dummy data on button click-->
                     <div class="form-group mx-auto w-50">
                         <label for="imageSelectOutput">Výstupní hodnota</label>
                         <vue-slider id="imageSelectOutput" v-model.number="imageSelectOutput" :min="0" :max="1" :interval="0.05"/>
@@ -81,6 +85,36 @@
                     </tbody>
                 </table>
             </div>
+            <div v-if="tabs.csv">
+                <div class="row">
+                    <div class="col-md-6 offset-md-3 text-left">
+                        <div class="custom-file mb-3">
+                            <input type="file" class="custom-file-input" id="inputGroupFile01" accept=".csv" @change="fileUploadCsv">
+                            <label class="custom-file-label" for="inputGroupFile01">Vložte csv soubor</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" v-model="csv.firstRowNames">
+                            <label class="form-check-label">Obsahuje první řádek názvy?</label>
+                        </div>
+                        <div class="form-group">
+                            <label>Odělovač</label>
+                            <input type="text" class="form-control" v-model="csv.delimiter">
+                        </div>
+                        <p class="text-muted mt-4 mb-0">Sloupečky začínají 0 a oddělte čárkou</p>
+                        <div class="form-group">
+                            <label>Vstupy</label>
+                            <input type="text" class="form-control" v-model="csv.input">
+                        </div>
+                        <div class="form-group">
+                            <label>Výstupy</label>
+                            <input type="text" class="form-control" v-model="csv.output">
+                        </div>
+                        <div class="form-group">
+                            <span class="btn btn-primary cursor-pointer" @click="$emit('load-csv', csv)">Nahrát</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div v-if="tabs.importTab">
                 <div class="row">
                     <div class="col-md-6 offset-md-3">
@@ -121,9 +155,17 @@
                 tabs: {
                     image: true,
                     custom: false,
-                    importTab: false
+                    importTab: false,
+                    csv: false
                 },
-                imageSelectOutput: 0
+                imageSelectOutput: 0,
+                csv: {
+                    delimiter: ',',
+                    firstRowNames: false,
+                    fileData: null,
+                    input: "",
+                    output: "",
+                }
             }
         },
         watch: {
@@ -193,6 +235,9 @@
             },
             fileUpload(data) {
                 this.$emit('load', data)
+            },
+            fileUploadCsv(data){
+                this.csv.fileData = data;
             }
         }
     }

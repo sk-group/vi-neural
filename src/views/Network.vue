@@ -10,6 +10,7 @@
                     :data="data"
                     @next="show('design')"
                     @load="loadFromFile"
+                    @load-csv="loadFromFileCsv"
             ></InputData>
             <NetworkDesign
                     v-if="isVisible('design')"
@@ -221,6 +222,53 @@
                     }
                 };
                 fr.readAsText(data.target.files[0]);
+            },
+            loadFromFileCsv(data){
+                let fr = new FileReader();
+                fr.onload = (dataLoad) =>{
+                    let parsedData = this.processCsvData(dataLoad.currentTarget.result, data);
+                    let inputCols = data.input.split(",");
+                    let outputCols = data.output.split(",");
+
+                    this.configuration.inputs = inputCols.length;
+                    this.configuration.outputs = outputCols.length;
+
+                    this.data = [];
+                    for(let line of parsedData){
+                        let input = [];
+                        let output = [];
+
+                        for(let inputCol of inputCols){
+                            if(!isNaN(inputCol))
+                                input.push(line[inputCol]);
+                        }
+                        for(let outputCol of outputCols){
+                            if(!isNaN(outputCol))
+                                output.push(line[outputCol]);
+                        }
+
+                        this.data.push({
+                            input: input,
+                            output: output
+                        })
+                    }
+                    this.show('design');
+                };
+                fr.readAsText(data.fileData.target.files[0]);
+            },
+            processCsvData(allText, settings) {
+                let allTextLines = allText.match(/[^\r\n]+/g);
+                let lines = [];
+
+                for (let i=(settings.firstRowNames?1:0); i<allTextLines.length; i++) {
+                    let data = allTextLines[i].split(settings.delimiter);
+                    let tarr = [];
+                    for (let j=0; j<data.length; j++) {
+                        tarr.push(data[j]);
+                    }
+                    lines.push(tarr);
+                }
+                return lines;
             },
             saveFile(){
                 let epoch = new Date().getTime();
