@@ -1,7 +1,7 @@
 <template>
     <div>
         <h1>Návrh sítě</h1>
-        <h4>Vnitřní vrstvy</h4>
+        <h4>Skryté vrstvy</h4>
         <div class="hidden-layers">
             <div class="row">
                 <div class="col" v-for="(item, index) in configuration.hiddenLayers">

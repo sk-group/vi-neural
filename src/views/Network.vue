@@ -7,11 +7,13 @@
                     :configuration="configuration"
                     :normalizedInputs="normalizedInputs"
                     :normalizedOutputs="normalizedOutputs"
+                    :metadata="metadata"
                     :data="data"
                     @next="show('design')"
                     @load="loadFromFile"
                     @load-dummy="loadConfig"
                     @load-csv="loadFromFileCsv"
+                    ref="inputData"
             ></InputData>
             <NetworkDesign
                     v-if="isVisible('design')"
@@ -26,6 +28,7 @@
                     v-if="isVisible('result')"
                     :configuration="configuration"
                     :data="normalizedData"
+                    :originalData="data"
                     :normalizedInputs="normalizedInputs"
                     :normalizedOutputs="normalizedOutputs"
                     :metadata="metadata"
@@ -43,6 +46,7 @@
     import NetworkDesignClass from '../lib/NetworkDesign';
     import Result from '../components/Result.vue';
     import Normalizer from '../lib/Normalizer';
+
     let FileSaver = require('file-saver');
 
     export default {
@@ -67,14 +71,14 @@
         computed: {
             normalizedInputs() {
                 let normalizedInputs = this.normalizer.getInputCount();
-                if(normalizedInputs === 0) {
+                if (normalizedInputs === 0) {
                     return this.configuration.inputs;
                 }
                 return normalizedInputs;
             },
             normalizedOutputs() {
                 let normalizedOutputs = this.normalizer.getOutputCount();
-                if(normalizedOutputs === 0) {
+                if (normalizedOutputs === 0) {
                     return this.configuration.outputs;
                 }
                 return this.normalizer.getOutputCount();
@@ -86,8 +90,8 @@
                 return this.normalizer.getMetadata();
             }
         },
-        data(){
-            return{
+        data() {
+            return {
                 graphRaw: {
                     nodes: [],
                     edges: []
@@ -144,19 +148,19 @@
                     }
                 },
                 networkDesign: null,
-                normalizer: null
+                normalizer: new Normalizer()
             }
         },
-        methods:{
-            show(sectionName = ''){
-                for(let section in this.appFlow){
+        methods: {
+            show(sectionName = '') {
+                for (let section in this.appFlow) {
                     if (!this.appFlow.hasOwnProperty(section))
                         continue;
                     this.appFlow[section].active = false;
                     this.appFlow[section].disabled = true;
                 }
 
-                switch (sectionName){
+                switch (sectionName) {
                     case 'inputData':
                         this.appFlow.inputData.active = true;
                         this.setDisabledProgress();
@@ -175,23 +179,23 @@
             },
             setDisabledProgress() {
                 let findActive = false;
-                for(let section in this.appFlow){
+                for (let section in this.appFlow) {
                     if (!this.appFlow.hasOwnProperty(section))
                         continue;
 
-                    if(!findActive){
+                    if (!findActive) {
                         this.appFlow[section].disabled = false;
                     }
 
-                    if(this.appFlow[section].active){
+                    if (this.appFlow[section].active) {
                         findActive = true;
                     }
                 }
             },
-            isVisible(name){
+            isVisible(name) {
                 return this.appFlow[name].active || process.env.NODE_ENV === 'development';
             },
-            networkDesignChange(data){
+            networkDesignChange(data) {
                 this.graphRaw.edges = data.edges;
                 this.graphRaw.nodes = data.nodes;
 
@@ -200,36 +204,34 @@
                 this.networkDesign.setNodes(data.nodes);
             },
             normalizeData() {
-                this.normalizer = new Normalizer();
                 this.normalizer.setData(this.data);
                 this.normalizer.normalize();
             },
-            loadFromFile(data){
+            loadFromFile(data) {
                 let fr = new FileReader();
-                fr.onload = (data) =>{
-                    try{
+                fr.onload = (data) => {
+                    try {
                         let parsedData = JSON.parse(data.currentTarget.result);
                         this.loadConfig(parsedData);
-                    }catch(e){
+                    } catch (e) {
                         alert("Chyba při načítání")
                     }
                     this.loadConfig(data);
                 };
                 fr.readAsText(data.target.files[0]);
             },
-            loadConfig(parsedData){
-                if(parsedData.configuration !== undefined && parsedData.data !== undefined && parsedData.graphRaw !== undefined){
+            loadConfig(parsedData) {
+                if (parsedData.configuration !== undefined && parsedData.data !== undefined && parsedData.graphRaw !== undefined) {
                     this.configuration = parsedData.configuration;
                     this.data = parsedData.data;
                     this.graphRaw = parsedData.graphRaw;
-                    this.show('result');
-                }else{
+                } else {
                     throw "error";
                 }
             },
-            loadFromFileCsv(data){
+            loadFromFileCsv(data) {
                 let fr = new FileReader();
-                fr.onload = (dataLoad) =>{
+                fr.onload = (dataLoad) => {
                     let parsedData = this.processCsvData(dataLoad.currentTarget.result, data);
                     let inputCols = data.input.split(",");
                     let outputCols = data.output.split(",");
@@ -238,25 +240,46 @@
                     this.configuration.outputs = outputCols.length;
 
                     this.data = [];
-                    for(let line of parsedData){
+                    for (let line of parsedData) {
                         let input = [];
                         let output = [];
 
-                        for(let inputCol of inputCols){
-                            if(!isNaN(inputCol))
-                                input.push(line[inputCol]);
+                        for (let inputCol of inputCols) {
+                            if (!isNaN(inputCol)) {
+                                let parsed = parseFloat(line[inputCol]);
+                                if(typeof line[inputCol] !== 'undefined') {
+                                    if (isNaN(parsed)) {
+                                        input.push(line[inputCol]);
+                                    } else {
+                                        input.push(parsed);
+                                    }
+                                }
+                            }
                         }
-                        for(let outputCol of outputCols){
-                            if(!isNaN(outputCol))
-                                output.push(line[outputCol]);
+                        for (let outputCol of outputCols) {
+                            if (!isNaN(outputCol)) {
+                                let parsed = parseFloat(line[outputCol]);
+                                if(typeof line[outputCol] !== 'undefined') {
+                                    if (isNaN(parsed)) {
+                                        output.push(line[outputCol]);
+                                    } else {
+                                        output.push(parsed);
+                                    }
+                                }
+                            }
                         }
-
-                        this.data.push({
-                            input: input,
-                            output: output
-                        })
+                        if(input.length > 0 && output.length > 0) {
+                            this.data.push({
+                                input: input,
+                                output: output
+                            })
+                        }
                     }
-                    this.show('design');
+                    if(this.data.length === 0) {
+                        alert("Chyba při načítání");
+                    } else {
+                        this.$refs.inputData.setActiveTab('custom');
+                    }
                 };
                 fr.readAsText(data.fileData.target.files[0]);
             },
@@ -264,25 +287,25 @@
                 let allTextLines = allText.match(/[^\r\n]+/g);
                 let lines = [];
 
-                for (let i=(settings.firstRowNames?1:0); i<allTextLines.length; i++) {
+                for (let i = (settings.firstRowNames ? 1 : 0); i < allTextLines.length; i++) {
                     let data = allTextLines[i].split(settings.delimiter);
                     let tarr = [];
-                    for (let j=0; j<data.length; j++) {
+                    for (let j = 0; j < data.length; j++) {
                         tarr.push(data[j]);
                     }
                     lines.push(tarr);
                 }
                 return lines;
             },
-            saveFile(){
+            saveFile() {
                 let epoch = new Date().getTime();
-                let data ={
+                let data = {
                     configuration: this.configuration,
                     data: this.data,
                     graphRaw: this.graphRaw
                 };
 
-                let file = new File([JSON.stringify(data)], "vi-neural-"+epoch+".vins", {type: "text/plain;charset=utf-8"});
+                let file = new File([JSON.stringify(data)], "vi-neural-" + epoch + ".vins", {type: "text/plain;charset=utf-8"});
                 FileSaver.saveAs(file);
             }
         }
@@ -305,7 +328,7 @@
         }
     }
 
-    .cursor-pointer{
+    .cursor-pointer {
         cursor: pointer;
     }
 </style>

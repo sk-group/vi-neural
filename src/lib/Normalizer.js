@@ -1,65 +1,74 @@
 export default class Normalizer {
-    constructo() {
+    constructor(metadata) {
+        this.metadata = {};
+        if (metadata) {
+            this.metadata = metadata;
+        }
         this.data = [];
         this.normalizedData = [];
     }
 
     setData(data) {
         data = JSON.parse(JSON.stringify(data));
-        for(let i = 0; i < data.length; i++) {
+        for (let i = 0; i < data.length; i++) {
             let remove = false;
-            for(let input of data[i].input) {
-                if(input === "") {
+            for (let input of data[i].input) {
+                if (input === "") {
                     remove = true;
                 }
             }
-            for(let output of data[i].output) {
-                if(output === "") {
+            for (let output of data[i].output) {
+                if (output === "") {
                     remove = true;
                 }
             }
-            if(remove) {
+            if (remove) {
                 data.splice(i, 1);
                 i--;
             }
         }
         this.data = data;
+        if (data.length > 0) {
+            this._analyzeMetadata();
+        }
     }
 
     normalize() {
-        if(this.data.length === 0) {
+        if (this.data.length === 0) {
             return;
         }
-        if(!this.data) {
+        if (!this.data) {
             console.error('No data to normalize.');
             return;
         }
         this.normalizedData = [];
-        if (!this.metadata) {
-            this.analyzeMetadata();
-        }
         for (let data of this.data) {
             let input = [];
             let output = [];
-            if(data.input.length > 0) {
+            if (data.input.length > 0) {
                 for (let i = 0; i < this.metadata.input.length; i++) {
                     if (this.metadata.input[i].type === 'number') {
                         let min = this.metadata.input[i].min;
                         let max = this.metadata.input[i].max;
                         let diff = max - min;
                         let minmax = 0;
-                        if(diff !== 0) {
+                        if (diff !== 0) {
                             minmax = (data.input[i] - min) / diff;
+                        }
+                        if (minmax > 1) {
+                            minmax = 1;
+                        } else if (minmax < 0) {
+                            minmax = 0;
                         }
                         input.push(minmax);
                     } else if (this.metadata.input[i].type === 'string') {
-                        for(let binary of this.metadata.input[i].binarized[data.input[i]]) {
+                        for (let binary of this.metadata.input[i].binarized[data.input[i]]) {
                             input.push(binary);
                         }
                     }
                 }
             }
-            if(data.output.length > 0) {
+            if (data.output.length > 0) {
                 for (let i = 0; i < this.metadata.output.length; i++) {
                     if (this.metadata.output[i].type === 'number') {
                         let min = this.metadata.output[i].min;
@@ -85,7 +94,7 @@ export default class Normalizer {
     };
 
     normalizeInput(input) {
-        if(!this.metadata) {
+        if (!this.metadata) {
             console.error('No metadata to normalize from.');
             return [];
         }
@@ -100,38 +109,45 @@ export default class Normalizer {
 
     deNormalizeOutput(output) {
         let denormalizedOutput = [];
-        if(!this.metadata) {
+        if (!this.metadata) {
             console.error('No metadata to denormalize from.');
             return [];
         }
         let i = 0;
-        for(let j = 0; j < this.metadata.output.length; j++) {
+        for (let j = 0; j < this.metadata.output.length; j++) {
             let outputMetadata = this.metadata.output[j];
-            if(outputMetadata.type === 'number') {
-                //de minmax
+            if (outputMetadata.type === 'number') {
+                //deminmax
                 let min = outputMetadata.min;
                 let max = outputMetadata.max;
                 let diff = max - min;
                 denormalizedOutput[j] = min;
-                if(diff !== 0) {
+                if (diff !== 0) {
                     denormalizedOutput[j] = (output[i] * diff) + min;
                 }
                 i++;
             } else if (outputMetadata.type === 'string') {
-                //de binarize
+                //debinarize
                 let binarized = outputMetadata.binarized;
                 let binaryLength = Object.keys(binarized).length;
 
                 let binaryOutput = output.slice(i, i + binaryLength);
-                binaryOutput = binaryOutput.map((binary) => {
+                let indexMax = 0;
+                let roundedBinaryOutput = binaryOutput.map((binary, index) => {
+                    if (binaryOutput[index] > binaryOutput[indexMax]) {
+                        indexMax = index;
+                    }
                     return Math.round(binary);
                 });
-                let oneIndex = binaryOutput.indexOf(1);
-                for(let key in binarized) {
-                    if(!binarized.hasOwnProperty(key)) {
+                let oneIndex = roundedBinaryOutput.indexOf(1);
+                if (oneIndex === -1) {
+                    oneIndex = indexMax;
+                }
+                for (let key in binarized) {
+                    if (!binarized.hasOwnProperty(key)) {
                         continue;
                     }
-                    if(binarized[key][oneIndex] === 1) {
+                    if (binarized[key][oneIndex] === 1) {
                         denormalizedOutput[j] = key;
                         break;
                     }
@@ -143,21 +159,21 @@ export default class Normalizer {
     }
 
     getNormalizedData() {
-        if(this.data.length === 0) {
+        if (this.data.length === 0) {
             return [];
         }
         return this.normalizedData;
     }
 
     getInputCount() {
-        if(this.data.length === 0) {
+        if (this.data.length === 0) {
             return 0;
         }
         return this.normalizedData[0].input.length;
     }
 
     getOutputCount() {
-        if(this.data.length === 0) {
+        if (this.data.length === 0) {
             return 0;
         }
         return this.normalizedData[0].output.length;
@@ -171,15 +187,45 @@ export default class Normalizer {
         return this.metadata;
     }
 
-    analyzeMetadata() {
-        this.metadata = {
-            input: [],
-            output: []
-        };
-        let types = this.getTypes();
-        let mins = this.getMins();
-        let maxes = this.getMaxes();
-        let distinct = this.getDistinctValues();
+    getXMin() {
+        let xMin = 0;
+        if (this.metadata && this.metadata.input[0]) {
+            return this.metadata.input[0].min;
+        }
+        return xMin;
+    }
+
+    getXMax() {
+        let xMax = 1;
+        if (this.metadata && this.metadata.input[0]) {
+            return this.metadata.input[0].max
+        }
+        return xMax;
+    }
+
+    getYMin() {
+        let yMin = 0;
+        if (this.metadata && this.metadata.output[0]) {
+            return this.metadata.output[0].min;
+        }
+        return yMin;
+    }
+
+    getYMax() {
+        let yMax = 1;
+        if (this.metadata && this.metadata.output[0]) {
+            return this.metadata.output[0].max;
+        }
+        return yMax;
+    }
+
+    _analyzeMetadata() {
+        this.metadata.input = [];
+        this.metadata.output = [];
+        let types = this._getTypes();
+        let mins = this._getMins();
+        let maxes = this._getMaxes();
+        let distinct = this._getDistinctValues();
         for (let i in types.input) {
             let metadata = {};
             metadata.type = types.input[i];
@@ -187,7 +233,7 @@ export default class Normalizer {
                 metadata.min = mins.input[i];
                 metadata.max = maxes.input[i];
             } else if (metadata.type == 'string') {
-                metadata.binarized = this.binarize(distinct.input[i]);
+                metadata.binarized = this._binarize(distinct.input[i]);
             }
             this.metadata.input.push(metadata);
         }
@@ -198,13 +244,13 @@ export default class Normalizer {
                 metadata.min = mins.output[i];
                 metadata.max = maxes.output[i];
             } else if (metadata.type == 'string') {
-                metadata.binarized = this.binarize(distinct.output[i]);
+                metadata.binarized = this._binarize(distinct.output[i]);
             }
             this.metadata.output.push(metadata);
         }
     }
 
-    getTypes() {
+    _getTypes() {
         let types = {
             input: [],
             output: []
@@ -228,7 +274,7 @@ export default class Normalizer {
         return types;
     }
 
-    getMins() {
+    _getMins() {
         let mins = {
             input: [],
             output: []
@@ -240,7 +286,7 @@ export default class Normalizer {
                     mins.input[i] = data.input[i];
                 }
             }
-            if(mins.input[i] < 1) {
+            if (mins.input[i] < 1) {
                 mins.input[i] = 0;
             }
         }
@@ -251,14 +297,14 @@ export default class Normalizer {
                     mins.output[i] = data.output[i];
                 }
             }
-            if(mins.output[i] < 1) {
+            if (mins.output[i] < 1) {
                 mins.output[i] = 0;
             }
         }
         return mins;
     }
 
-    getMaxes() {
+    _getMaxes() {
         let maxes = {
             input: [],
             output: []
@@ -270,7 +316,7 @@ export default class Normalizer {
                     maxes.input[i] = data.input[i];
                 }
             }
-            if(maxes.input[i] < 1) {
+            if (maxes.input[i] < 1) {
                 maxes.input[i] = 1;
             }
         }
@@ -281,14 +327,14 @@ export default class Normalizer {
                     maxes.output[i] = data.output[i];
                 }
             }
-            if(maxes.output[i] < 1) {
+            if (maxes.output[i] < 1) {
                 maxes.output[i] = 1;
             }
         }
         return maxes;
     }
 
-    getDistinctValues() {
+    _getDistinctValues() {
         let distinct = {
             input: [],
             output: []
@@ -312,7 +358,7 @@ export default class Normalizer {
         return distinct;
     }
 
-    binarize(distinct) {
+    _binarize(distinct) {
         let binarized = {};
         let length = distinct.length;
         for (let i = 0; i < length; i++) {

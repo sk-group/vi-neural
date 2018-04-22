@@ -17,8 +17,18 @@
                 </div>
             </div>
             <h2>Data pro síť</h2>
+            <div class="text-center mb-3">
+                <span class="btn btn-outline-primary btn-sm" @click="loadDummy('and')">And</span>
+                <span class="btn btn-outline-primary btn-sm" @click="loadDummy('or')">Or</span>
+                <span class="btn btn-outline-primary btn-sm" @click="loadDummy('xor')">Xor</span>
+                <span class="btn btn-outline-primary btn-sm" @click="loadDummy('vrtule')">Vrtule</span>
+                <span class="btn btn-outline-primary btn-sm" @click="loadDummy('kruh')">Kruh</span>
+                <span class="btn btn-outline-primary btn-sm" @click="loadDummy('mnoziny')">Množiny</span>
+                <span class="btn btn-outline-primary btn-sm" @click="loadDummy('string')">Řetězec jako výstup</span>
+                <span class="btn btn-outline-primary btn-sm" @click="loadDummy('iris')">Iris</span>
+            </div>
             <ul class="nav nav-tabs mb-3 justify-content-center">
-                <li class="nav-item" @click="setActiveTab('image')">
+                <li class="nav-item" @click="setActiveTab('image')" v-if="normalizedInputs == 2 && (normalizedOutputs == 1 || (configuration.outputs == 1 && metadata.output[0].type == 'string'))">
                     <span class="nav-link cursor-pointer" :class="{'active': tabs.image}">Výběr z obrázku</span>
                 </li>
                 <li class="nav-item" @click="setActiveTab('custom')">
@@ -32,29 +42,49 @@
                 </li>
             </ul>
             <div v-if="tabs.image">
-                <div v-if="normalizedInputs == 2 && normalizedOutputs == 1">
-                    <div class="text-center mb-3">
-                        <span class="btn btn-outline-primary btn-sm" @click="loadDummy('and')">And</span>
-                        <span class="btn btn-outline-primary btn-sm" @click="loadDummy('or')">Or</span>
-                        <span class="btn btn-outline-primary btn-sm" @click="loadDummy('xor')">Xor</span>
-                        <span class="btn btn-outline-primary btn-sm" @click="loadDummy('vrtule')">Vrtule</span>
-                        <span class="btn btn-outline-primary btn-sm" @click="loadDummy('kruh')">Kruh</span>
-                        <span class="btn btn-outline-primary btn-sm" @click="loadDummy('ctverec')">Čtverec</span>
-                        <span class="btn btn-outline-primary btn-sm" @click="loadDummy('mnoziny')">Množiny</span>
-                    </div>
+                <div v-if="normalizedInputs == 2 && (normalizedOutputs == 1 || (configuration.outputs == 1 && metadata.output[0].type == 'string'))">
                     <div class="form-group mx-auto w-50">
                         <label for="imageSelectOutput">Výstupní hodnota</label>
-                        <vue-slider id="imageSelectOutput" v-model.number="imageSelectOutput" :min="0" :max="1" :interval="0.05"/>
+                        <ul class="nav nav-tabs mb-3 justify-content-center">
+                            <li class="nav-item" @click="outputType = 'number'">
+                                <span class="nav-link cursor-pointer" :class="{'active': outputType === 'number'}">Čísla</span>
+                            </li>
+                            <li class="nav-item" @click="outputType = 'string'">
+                                <span class="nav-link cursor-pointer" :class="{'active': outputType === 'string'}">Řetězce</span>
+                            </li>
+                        </ul>
+                        <template v-if="outputType === 'number'">
+                            <vue-slider id="imageSelectOutput" v-model.number="imageSelectOutput" :min="0" :max="1" :interval="0.05"/>
+                        </template>
+                        <div v-else-if="outputType === 'string'" class="row text-left">
+                            <div class="col-md-6">
+                                <label for="imageSelectOutput-select">Existující</label>
+                                <select id="imageSelectOutput-select" v-model="imageSelectOutput" class="form-control mb-3">
+                                    <option v-for="output in metadata.output[0].binarized"
+                                            :value="normalizer.deNormalizeOutput(output)[0]"
+                                            :style="{
+                                                color: getColor(output)
+                                            }">{{ normalizer.deNormalizeOutput(output)[0] }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="imageSelectOutput-text">Vlastní</label>
+                                <input id="imageSelectOutput-text" v-model="imageSelectOutput" class="form-control mb-3"/>
+                            </div>
+                        </div>
                     </div>
                     <div class="image-select-wrapper mx-auto">
                         <Axis :min="0" :max="1"/>
                         <Axis vertical="true" :min="0" :max="1"/>
                         <div class="image-select" @click="addPoint" ref="imageSelect">
                             <div class="image-inner">
-                        <span v-for="(data, index) in data" class="point" :style="{
-                            left: data.input[0] * 100 + '%',
-                            top: data.input[1] * 100 +'%',
-                            backgroundColor: 'rgba(' + Math.round(255 * data.output[0]) + ',' + Math.round(255 * data.output[0]) + ',' + Math.round(255 * data.output[0]) + ',1)' }"
+                        <span v-for="(data, index) in data" class="point"
+                              :title="data.input[0].toFixed(2) + ', ' + data.input[1].toFixed(2) + ' => ' + data.output[0]"
+                              :style="{
+                                  left: data.input[0] * 100 + '%',
+                                  top: data.input[1] * 100 +'%',
+                                  backgroundColor: getColor(metadata.output[0].type === 'number' ? data.output : metadata.output[0].binarized[data.output[0]])}"
                               @click.stop="removePoint(index)"></span>
                             </div>
                         </div>
@@ -63,7 +93,7 @@
                     </div>
                 </div>
             </div>
-            <div v-if="tabs.custom">
+            <div v-if="tabs.custom" class="custom-data-wrap">
                 <table class="table table-primary table-striped table-data">
                     <thead>
                     <tr class="bg-primary">
@@ -97,7 +127,7 @@
                 <div class="row">
                     <div class="col-md-6 offset-md-3 text-left">
                         <div class="custom-file mb-3">
-                            <input type="file" class="custom-file-input" id="inputGroupFile01" accept=".csv" @change="fileUploadCsv">
+                            <input type="file" class="custom-file-input cursor-pointer" id="inputGroupFile01" accept=".csv" @change="fileUploadCsv">
                             <label class="custom-file-label" for="inputGroupFile01">Vložte csv soubor</label>
                         </div>
                         <div class="form-check">
@@ -108,7 +138,7 @@
                             <label>Odělovač</label>
                             <input type="text" class="form-control" v-model="csv.delimiter">
                         </div>
-                        <p class="text-muted mt-4 mb-0">Sloupečky začínají 0 a oddělte čárkou</p>
+                        <p class="text-muted mt-4 mb-0">Slopuce oddělte čárkou, začínají číslem 0</p>
                         <div class="form-group">
                             <label>Vstupy</label>
                             <input type="text" class="form-control" v-model="csv.input">
@@ -150,10 +180,12 @@
 <script>
     import Axis from './Axis';
     import vueSlider from 'vue-slider-component'
+    import Normalizer from '../lib/Normalizer';
+    import getColor from '../lib/ColorHelpers';
 
     export default {
         name: "InputData",
-        props: ['configuration', 'data', 'normalizedInputs', 'normalizedOutputs'],
+        props: ['configuration', 'data', 'normalizedInputs', 'normalizedOutputs', 'metadata'],
         components: {
             Axis,
             vueSlider
@@ -166,7 +198,7 @@
                     importTab: false,
                     csv: false
                 },
-                imageSelectOutput: 0,
+                imageSelectOutput: this.data[0].output[0],
                 csv: {
                     delimiter: ',',
                     firstRowNames: false,
@@ -175,14 +207,362 @@
                     output: "",
                 },
                 dummyData: {
-                    and: {"configuration":{"inputs":2,"hiddenLayers":[{"count":"1"}],"hopfield":false,"outputs":1,"iterations":1000,"speed":10,"learningRate":0.5,"activationFunction":"LOGISTIC","costFunction":"MSE","minError":0.005},"data":[{"input":[0,0],"output":[0]},{"input":[0,1],"output":[0]},{"input":[1,0],"output":[0]},{"input":[1,1],"output":[1]}],"graphRaw":{"nodes":[{"id":"input-0","label":"Vstup 1","fixed":true,"x":-450,"y":0,"color":"#8cffaa"},{"id":"input-1","label":"Vstup 2","fixed":true,"x":-450,"y":100,"color":"#8cffaa"},{"id":"output-0","label":"Výstup 1","fixed":true,"x":450,"y":0,"color":"#ff5b63"},{"id":"hidden-0-0","label":""}],"edges":[{"from":"input-0","to":"hidden-0-0","id":"42Wbx","arrows":"to"},{"from":"input-1","to":"hidden-0-0","id":"t0JM3","arrows":"to"},{"from":"hidden-0-0","to":"output-0","id":"kPu9n","arrows":"to"}]}},
-                    or: {"configuration":{"inputs":2,"hiddenLayers":[{"count":"1"}],"hopfield":false,"outputs":1,"iterations":1000,"speed":10,"learningRate":0.5,"activationFunction":"LOGISTIC","costFunction":"MSE","minError":0.005},"data":[{"input":[0,0],"output":[0]},{"input":[0,1],"output":[1]},{"input":[1,0],"output":[1]},{"input":[1,1],"output":[1]}],"graphRaw":{"nodes":[{"id":"input-0","label":"Vstup 1","fixed":true,"x":-450,"y":0,"color":"#8cffaa"},{"id":"input-1","label":"Vstup 2","fixed":true,"x":-450,"y":100,"color":"#8cffaa"},{"id":"output-0","label":"Výstup 1","fixed":true,"x":450,"y":0,"color":"#ff5b63"},{"id":"hidden-0-0","label":""}],"edges":[{"from":"input-0","to":"hidden-0-0","id":"42Wbx","arrows":"to"},{"from":"input-1","to":"hidden-0-0","id":"t0JM3","arrows":"to"},{"from":"hidden-0-0","to":"output-0","id":"kPu9n","arrows":"to"}]}},
-                    xor: {"configuration":{"inputs":2,"hiddenLayers":[{"count":"2"}],"hopfield":false,"outputs":1,"iterations":1000,"speed":10,"learningRate":0.5,"activationFunction":"LOGISTIC","costFunction":"MSE","minError":0.005},"data":[{"input":[0,0],"output":[0]},{"input":[0,1],"output":[1]},{"input":[1,0],"output":[1]},{"input":[1,1],"output":[0]}],"graphRaw":{"nodes":[{"id":"input-0","label":"Vstup 1","fixed":true,"x":-450,"y":0,"color":"#8cffaa"},{"id":"input-1","label":"Vstup 2","fixed":true,"x":-450,"y":100,"color":"#8cffaa"},{"id":"output-0","label":"Výstup 1","fixed":true,"x":450,"y":0,"color":"#ff5b63"},{"id":"hidden-0-0","label":""},{"id":"hidden-0-1","label":""}],"edges":[{"from":"input-0","to":"hidden-0-0","id":"OmNBC","arrows":"to"},{"from":"input-1","to":"hidden-0-0","id":"JozDw","arrows":"to"},{"from":"hidden-0-0","to":"output-0","id":"P8zfE","arrows":"to"},{"from":"input-0","to":"hidden-0-1","id":"LLTaG","arrows":"to"},{"from":"input-1","to":"hidden-0-1","id":"VzQ2S","arrows":"to"},{"from":"hidden-0-1","to":"output-0","id":"1koNC","arrows":"to"}]}},
-                    vrtule: {"configuration":{"inputs":2,"hiddenLayers":[{"count":"4"}],"hopfield":false,"outputs":1,"iterations":100000,"speed":10000,"learningRate":0.5,"activationFunction":"LOGISTIC","costFunction":"MSE","minError":0.005},"data":[{"input":[0.050200803212851405,0.9538152610441767],"output":[0]},{"input":[0.05220883534136546,0.8895582329317269],"output":[0]},{"input":[0.03815261044176707,0.8012048192771084],"output":[0]},{"input":[0.04417670682730924,0.7208835341365462],"output":[0]},{"input":[0.04417670682730924,0.6325301204819277],"output":[0]},{"input":[0.04618473895582329,0.5843373493975904],"output":[0]},{"input":[0.6104417670682731,0.40763052208835343],"output":[0]},{"input":[0.6244979919678715,0.3353413654618474],"output":[0]},{"input":[0.6104417670682731,0.25301204819277107],"output":[0]},{"input":[0.6184738955823293,0.13855421686746988],"output":[0]},{"input":[0.6405622489959839,0.060240963855421686],"output":[0]},{"input":[0.7028112449799196,0.04819277108433735],"output":[0]},{"input":[0.7389558232931727,0.16265060240963855],"output":[0]},{"input":[0.7469879518072289,0.26506024096385544],"output":[0]},{"input":[0.7289156626506024,0.35542168674698793],"output":[0]},{"input":[0.8232931726907631,0.36947791164658633],"output":[0]},{"input":[0.8554216867469879,0.3313253012048193],"output":[0]},{"input":[0.8433734939759037,0.22088353413654618],"output":[0]},{"input":[0.8413654618473896,0.13253012048192772],"output":[0]},{"input":[0.9056224899598394,0.3092369477911647],"output":[0]},{"input":[0.9437751004016064,0.26506024096385544],"output":[0]},{"input":[0.9257028112449799,0.0823293172690763],"output":[0]},{"input":[0.8333333333333334,0.03815261044176707],"output":[0]},{"input":[0.929718875502008,0.36947791164658633],"output":[0]},{"input":[0.15261044176706828,0.5943775100401606],"output":[0]},{"input":[0.3273092369477912,0.6204819277108434],"output":[0]},{"input":[0.37349397590361444,0.6526104417670683],"output":[0]},{"input":[0.20481927710843373,0.7168674698795181],"output":[0]},{"input":[0.16265060240963855,0.7369477911646586],"output":[0]},{"input":[0.19076305220883535,0.8333333333333334],"output":[0]},{"input":[0.29116465863453816,0.9156626506024096],"output":[0]},{"input":[0.39558232931726905,0.9156626506024096],"output":[0]},{"input":[0.3493975903614458,0.7670682730923695],"output":[0]},{"input":[0.28714859437751006,0.7650602409638554],"output":[0]},{"input":[0.25502008032128515,0.6124497991967871],"output":[0]},{"input":[0.1686746987951807,0.9417670682730924],"output":[0]},{"input":[0.5742971887550201,0.9337349397590361],"output":[1]},{"input":[0.5803212851405622,0.8493975903614458],"output":[1]},{"input":[0.5622489959839357,0.7168674698795181],"output":[1]},{"input":[0.5582329317269076,0.5783132530120482],"output":[1]},{"input":[0.6485943775100401,0.570281124497992],"output":[1]},{"input":[0.6224899598393574,0.6285140562248996],"output":[1]},{"input":[0.5823293172690763,0.642570281124498],"output":[1]},{"input":[0.7891566265060241,0.6305220883534136],"output":[1]},{"input":[0.8052208835341366,0.572289156626506],"output":[1]},{"input":[0.8815261044176707,0.6867469879518072],"output":[1]},{"input":[0.7349397590361446,0.7449799196787149],"output":[1]},{"input":[0.7208835341365462,0.6385542168674698],"output":[1]},{"input":[0.6586345381526104,0.785140562248996],"output":[1]},{"input":[0.6666666666666666,0.8674698795180723],"output":[1]},{"input":[0.7550200803212851,0.9377510040160643],"output":[1]},{"input":[0.9417670682730924,0.8955823293172691],"output":[1]},{"input":[0.8373493975903614,0.8293172690763052],"output":[1]},{"input":[0.9357429718875502,0.7208835341365462],"output":[1]},{"input":[0.9477911646586346,0.6365461847389559],"output":[1]},{"input":[0.9036144578313253,0.5783132530120482],"output":[1]},{"input":[0.7891566265060241,0.7650602409638554],"output":[1]},{"input":[0.8393574297188755,0.9397590361445783],"output":[1]},{"input":[0.24899598393574296,0.43172690763052207],"output":[1]},{"input":[0.2971887550200803,0.38353413654618473],"output":[1]},{"input":[0.16265060240963855,0.35943775100401604],"output":[1]},{"input":[0.10441767068273092,0.35542168674698793],"output":[1]},{"input":[0.11646586345381527,0.25903614457831325],"output":[1]},{"input":[0.0783132530120482,0.22690763052208834],"output":[1]},{"input":[0.09236947791164658,0.13654618473895583],"output":[1]},{"input":[0.05421686746987952,0.07630522088353414],"output":[1]},{"input":[0.11646586345381527,0.02208835341365462],"output":[1]},{"input":[0.18473895582329317,0.03815261044176707],"output":[1]},{"input":[0.18072289156626506,0.15060240963855423],"output":[1]},{"input":[0.26907630522088355,0.20481927710843373],"output":[1]},{"input":[0.285140562248996,0.178714859437751],"output":[1]},{"input":[0.321285140562249,0.05823293172690763],"output":[1]},{"input":[0.26506024096385544,0.040160642570281124],"output":[1]},{"input":[0.42570281124497994,0.10843373493975904],"output":[1]},{"input":[0.4538152610441767,0.018072289156626505],"output":[1]},{"input":[0.357429718875502,0.17670682730923695],"output":[1]},{"input":[0.2971887550200803,0.23694779116465864],"output":[1]},{"input":[0.20682730923694778,0.26305220883534136],"output":[1]},{"input":[0.3453815261044177,0.26506024096385544],"output":[1]},{"input":[0.39558232931726905,0.3614457831325301],"output":[1]},{"input":[0.37349397590361444,0.41767068273092367],"output":[1]},{"input":[0.43172690763052207,0.37751004016064255],"output":[1]},{"input":[0.44176706827309237,0.23293172690763053],"output":[1]},{"input":[0.4397590361445783,0.29518072289156627],"output":[1]},{"input":[0.42570281124497994,0.19879518072289157],"output":[1]},{"input":[0.060240963855421686,0.3092369477911647],"output":[1]},{"input":[0.05421686746987952,0.39959839357429716],"output":[1]},{"input":[0.26706827309236947,0.3413654618473896],"output":[1]}],"graphRaw":{"nodes":[{"id":"input-0","label":"Vstup 1","fixed":true,"x":-450,"y":0,"color":"#8cffaa"},{"id":"input-1","label":"Vstup 2","fixed":true,"x":-450,"y":100,"color":"#8cffaa"},{"id":"output-0","label":"Výstup 1","fixed":true,"x":450,"y":0,"color":"#ff5b63"},{"id":"hidden-0-0","label":""},{"id":"hidden-0-1","label":""},{"id":"hidden-0-2","label":""},{"id":"hidden-0-3","label":""}],"edges":[{"from":"input-0","to":"hidden-0-0","id":"5gOz4","arrows":"to"},{"from":"input-1","to":"hidden-0-0","id":"JNbTv","arrows":"to"},{"from":"hidden-0-0","to":"output-0","id":"bRw1R","arrows":"to"},{"from":"input-0","to":"hidden-0-1","id":"xvxN7","arrows":"to"},{"from":"input-1","to":"hidden-0-1","id":"F5g3N","arrows":"to"},{"from":"hidden-0-1","to":"output-0","id":"SOEQf","arrows":"to"},{"from":"input-0","to":"hidden-0-2","id":"V8MJ8","arrows":"to"},{"from":"input-1","to":"hidden-0-2","id":"iMdsY","arrows":"to"},{"from":"hidden-0-2","to":"output-0","id":"z78mH","arrows":"to"},{"from":"input-0","to":"hidden-0-3","id":"luolT","arrows":"to"},{"from":"input-1","to":"hidden-0-3","id":"IATih","arrows":"to"},{"from":"hidden-0-3","to":"output-0","id":"P1fLk","arrows":"to"}]}},
-                    kruh: {"configuration":{"inputs":2,"hiddenLayers":[{"count":3}],"hopfield":false,"outputs":1,"iterations":1000,"speed":10,"learningRate":0.5,"activationFunction":"LOGISTIC","costFunction":"MSE","minError":0.005},"data":[{"input":[0.44377510040160645,0.6024096385542169],"output":[0]},{"input":[0.38755020080321284,0.536144578313253],"output":[0]},{"input":[0.36947791164658633,0.43172690763052207],"output":[0]},{"input":[0.4397590361445783,0.3534136546184739],"output":[0]},{"input":[0.5823293172690763,0.35542168674698793],"output":[0]},{"input":[0.6445783132530121,0.42369477911646586],"output":[0]},{"input":[0.6104417670682731,0.572289156626506],"output":[0]},{"input":[0.4799196787148594,0.6365461847389559],"output":[0]},{"input":[0.3534136546184739,0.5461847389558233],"output":[0]},{"input":[0.4397590361445783,0.39759036144578314],"output":[0]},{"input":[0.4959839357429719,0.5180722891566265],"output":[0]},{"input":[0.5401606425702812,0.5562248995983936],"output":[0]},{"input":[0.5020080321285141,0.4457831325301205],"output":[0]},{"input":[0.5,0.3714859437751004],"output":[0]},{"input":[0.6244979919678715,0.5060240963855421],"output":[0]},{"input":[0.5622489959839357,0.6285140562248996],"output":[0]},{"input":[0.44377510040160645,0.5401606425702812],"output":[0]},{"input":[0.41967871485943775,0.45180722891566266],"output":[0]},{"input":[0.3393574297188755,0.8152610441767069],"output":[1]},{"input":[0.23092369477911648,0.7469879518072289],"output":[1]},{"input":[0.15461847389558234,0.6506024096385542],"output":[1]},{"input":[0.18072289156626506,0.46987951807228917],"output":[1]},{"input":[0.1686746987951807,0.2931726907630522],"output":[1]},{"input":[0.178714859437751,0.19678714859437751],"output":[1]},{"input":[0.3674698795180723,0.08835341365461848],"output":[1]},{"input":[0.606425702811245,0.09839357429718876],"output":[1]},{"input":[0.7088353413654619,0.19477911646586346],"output":[1]},{"input":[0.6666666666666666,0.2289156626506024],"output":[1]},{"input":[0.8714859437751004,0.3313253012048193],"output":[1]},{"input":[0.7911646586345381,0.5622489959839357],"output":[1]},{"input":[0.7610441767068273,0.7188755020080321],"output":[1]},{"input":[0.678714859437751,0.8072289156626506],"output":[1]},{"input":[0.42570281124497994,0.7811244979919679],"output":[1]},{"input":[0.28112449799196787,0.7168674698795181],"output":[1]},{"input":[0.2289156626506024,0.570281124497992],"output":[1]},{"input":[0.27710843373493976,0.3714859437751004],"output":[1]},{"input":[0.41967871485943775,0.20281124497991967],"output":[1]},{"input":[0.5883534136546185,0.22289156626506024],"output":[1]},{"input":[0.7570281124497992,0.3614457831325301],"output":[1]},{"input":[0.7409638554216867,0.463855421686747],"output":[1]},{"input":[0.8654618473895582,0.5441767068273092],"output":[1]},{"input":[0.8975903614457831,0.7248995983935743],"output":[1]},{"input":[0.8995983935742972,0.8995983935742972],"output":[1]},{"input":[0.7891566265060241,0.9698795180722891],"output":[1]},{"input":[0.41365461847389556,0.9337349397590361],"output":[1]},{"input":[0.11044176706827309,0.8775100401606426],"output":[1]},{"input":[0.05823293172690763,0.8493975903614458],"output":[1]},{"input":[0.09036144578313253,0.5060240963855421],"output":[1]},{"input":[0.10642570281124498,0.3654618473895582],"output":[1]},{"input":[0.10040160642570281,0.1927710843373494],"output":[1]},{"input":[0.23293172690763053,0.11244979919678715],"output":[1]},{"input":[0.8012048192771084,0.12449799196787148],"output":[1]},{"input":[0.927710843373494,0.2710843373493976],"output":[1]},{"input":[0.6044176706827309,0.9457831325301205],"output":[1]}],"graphRaw":{"nodes":[{"id":"input-0","label":"Vstup 1","fixed":true,"x":-450,"y":0,"color":"#8cffaa"},{"id":"input-1","label":"Vstup 2","fixed":true,"x":-450,"y":100,"color":"#8cffaa"},{"id":"output-0","label":"Výstup 1","fixed":true,"x":450,"y":0,"color":"#ff5b63"},{"id":"hidden-0-0","label":""},{"id":"hidden-0-1","label":""},{"id":"hidden-0-2","label":""}],"edges":[{"from":"input-0","to":"hidden-0-0","id":"V0JPG","arrows":"to"},{"from":"input-1","to":"hidden-0-0","id":"8ep62","arrows":"to"},{"from":"hidden-0-0","to":"output-0","id":"RFDnJ","arrows":"to"},{"from":"input-0","to":"hidden-0-1","id":"bemQx","arrows":"to"},{"from":"input-1","to":"hidden-0-1","id":"N7ctq","arrows":"to"},{"from":"hidden-0-1","to":"output-0","id":"M1z4b","arrows":"to"},{"from":"input-0","to":"hidden-0-2","id":"iIcB2","arrows":"to"},{"from":"input-1","to":"hidden-0-2","id":"VE9SC","arrows":"to"},{"from":"hidden-0-2","to":"output-0","id":"VtCqe","arrows":"to"}]}},
-                    ctverec: {"configuration":{"inputs":2,"hiddenLayers":[{"count":"4"}],"hopfield":false,"outputs":1,"iterations":1000,"speed":10,"learningRate":0.5,"activationFunction":"LOGISTIC","costFunction":"MSE","minError":0.005},"data":[{"input":[0.28313253012048195,0.6927710843373494],"output":[0]},{"input":[0.28313253012048195,0.5662650602409639],"output":[0]},{"input":[0.28112449799196787,0.4799196787148594],"output":[0]},{"input":[0.27710843373493976,0.3654618473895582],"output":[0]},{"input":[0.40763052208835343,0.3132530120481928],"output":[0]},{"input":[0.5401606425702812,0.3273092369477912],"output":[0]},{"input":[0.6606425702811245,0.3192771084337349],"output":[0]},{"input":[0.7048192771084337,0.3273092369477912],"output":[0]},{"input":[0.7048192771084337,0.4538152610441767],"output":[0]},{"input":[0.7048192771084337,0.5481927710843374],"output":[0]},{"input":[0.7208835341365462,0.6285140562248996],"output":[0]},{"input":[0.5281124497991968,0.6405622489959839],"output":[0]},{"input":[0.3815261044176707,0.6706827309236948],"output":[0]},{"input":[0.4859437751004016,0.6666666666666666],"output":[0]},{"input":[0.6506024096385542,0.6746987951807228],"output":[0]},{"input":[0.7570281124497992,0.6827309236947792],"output":[0]},{"input":[0.42168674698795183,0.5542168674698795],"output":[0]},{"input":[0.3855421686746988,0.41566265060240964],"output":[0]},{"input":[0.5180722891566265,0.42771084337349397],"output":[0]},{"input":[0.5803212851405622,0.5441767068273092],"output":[0]},{"input":[0.642570281124498,0.5783132530120482],"output":[0]},{"input":[0.6244979919678715,0.42771084337349397],"output":[0]},{"input":[0.5983935742971888,0.40160642570281124],"output":[0]},{"input":[0.10441767068273092,0.9036144578313253],"output":[1]},{"input":[0.07028112449799197,0.6546184738955824],"output":[1]},{"input":[0.08835341365461848,0.4497991967871486],"output":[1]},{"input":[0.1144578313253012,0.3192771084337349],"output":[1]},{"input":[0.09437751004016064,0.142570281124498],"output":[1]},{"input":[0.13052208835341367,0.060240963855421686],"output":[1]},{"input":[0.43373493975903615,0.060240963855421686],"output":[1]},{"input":[0.3855421686746988,0.15461847389558234],"output":[1]},{"input":[0.25100401606425704,0.10843373493975904],"output":[1]},{"input":[0.6907630522088354,0.0783132530120482],"output":[1]},{"input":[0.7188755020080321,0.15060240963855423],"output":[1]},{"input":[0.7530120481927711,0.16265060240963855],"output":[1]},{"input":[0.9176706827309237,0.14056224899598393],"output":[1]},{"input":[0.8614457831325302,0.4598393574297189],"output":[1]},{"input":[0.8534136546184738,0.39156626506024095],"output":[1]},{"input":[0.8534136546184738,0.3393574297188755],"output":[1]},{"input":[0.8493975903614458,0.6325301204819277],"output":[1]},{"input":[0.8534136546184738,0.8012048192771084],"output":[1]},{"input":[0.6164658634538153,0.8714859437751004],"output":[1]},{"input":[0.3092369477911647,0.8433734939759037],"output":[1]},{"input":[0.17670682730923695,0.8453815261044176],"output":[1]},{"input":[0.20883534136546184,0.6927710843373494],"output":[1]},{"input":[0.15261044176706828,0.4759036144578313],"output":[1]},{"input":[0.41365461847389556,0.7710843373493976],"output":[1]},{"input":[0.6485943775100401,0.8453815261044176],"output":[1]},{"input":[0.5783132530120482,0.9337349397590361],"output":[1]},{"input":[0.8975903614457831,0.9116465863453815],"output":[1]},{"input":[0.9317269076305221,0.8313253012048193],"output":[1]},{"input":[0.5080321285140562,0.8253012048192772],"output":[1]},{"input":[0.3815261044176707,0.9317269076305221],"output":[1]},{"input":[0.6144578313253012,0.8493975903614458],"output":[1]},{"input":[0.7951807228915663,0.748995983935743],"output":[1]},{"input":[0.9457831325301205,0.45582329317269077],"output":[1]},{"input":[0.5763052208835341,0.12048192771084337],"output":[1]},{"input":[0.27309236947791166,0.1746987951807229],"output":[1]}],"graphRaw":{"nodes":[{"id":"input-0","label":"Vstup 1","fixed":true,"x":-450,"y":0,"color":"#8cffaa"},{"id":"input-1","label":"Vstup 2","fixed":true,"x":-450,"y":100,"color":"#8cffaa"},{"id":"output-0","label":"Výstup 1","fixed":true,"x":450,"y":0,"color":"#ff5b63"},{"id":"hidden-0-0","label":""},{"id":"hidden-0-1","label":""},{"id":"hidden-0-2","label":""},{"id":"hidden-0-3","label":""}],"edges":[{"from":"input-0","to":"hidden-0-0","id":"NaOJg","arrows":"to"},{"from":"input-1","to":"hidden-0-0","id":"83Pmu","arrows":"to"},{"from":"hidden-0-0","to":"output-0","id":"rwJGJ","arrows":"to"},{"from":"input-0","to":"hidden-0-1","id":"XK4re","arrows":"to"},{"from":"input-1","to":"hidden-0-1","id":"czBw7","arrows":"to"},{"from":"hidden-0-1","to":"output-0","id":"yynht","arrows":"to"},{"from":"input-0","to":"hidden-0-2","id":"0b9Oi","arrows":"to"},{"from":"input-1","to":"hidden-0-2","id":"Bh6aJ","arrows":"to"},{"from":"hidden-0-2","to":"output-0","id":"bHr4E","arrows":"to"},{"from":"input-0","to":"hidden-0-3","id":"DEqI5","arrows":"to"},{"from":"input-1","to":"hidden-0-3","id":"YgezW","arrows":"to"},{"from":"hidden-0-3","to":"output-0","id":"DkSh9","arrows":"to"}]}},
-                    mnoziny: {"configuration":{"inputs":2,"hiddenLayers":[{"count":"1"}],"hopfield":false,"outputs":1,"iterations":1000,"speed":10,"learningRate":0.5,"activationFunction":"LOGISTIC","costFunction":"MSE","minError":0.005},"data":[{"input":[0.1285140562248996,0.9136546184738956],"output":[0]},{"input":[0.07429718875502007,0.8373493975903614],"output":[0]},{"input":[0.16265060240963855,0.7088353413654619],"output":[0]},{"input":[0.28714859437751006,0.8614457831325302],"output":[0]},{"input":[0.25903614457831325,0.8313253012048193],"output":[0]},{"input":[0.15863453815261044,0.6506024096385542],"output":[0]},{"input":[0.13453815261044177,0.7289156626506024],"output":[0]},{"input":[0.3092369477911647,0.893574297188755],"output":[0]},{"input":[0.1646586345381526,0.8855421686746988],"output":[0]},{"input":[0.22690763052208834,0.7891566265060241],"output":[0]},{"input":[0.15461847389558234,0.7570281124497992],"output":[0]},{"input":[0.35943775100401604,0.6144578313253012],"output":[0]},{"input":[0.1706827309236948,0.6224899598393574],"output":[0]},{"input":[0.12248995983935743,0.6244979919678715],"output":[0]},{"input":[0.11847389558232932,0.6686746987951807],"output":[0]},{"input":[0.3714859437751004,0.7469879518072289],"output":[0]},{"input":[0.39558232931726905,0.7710843373493976],"output":[0]},{"input":[0.2710843373493976,0.6927710843373494],"output":[0]},{"input":[0.2991967871485944,0.7309236947791165],"output":[0]},{"input":[0.3112449799196787,0.7771084337349398],"output":[0]},{"input":[0.2289156626506024,0.6847389558232931],"output":[0]},{"input":[0.178714859437751,0.7951807228915663],"output":[0]},{"input":[0.7530120481927711,0.3493975903614458],"output":[1]},{"input":[0.6947791164658634,0.3192771084337349],"output":[1]},{"input":[0.5943775100401606,0.17269076305220885],"output":[1]},{"input":[0.6726907630522089,0.0783132530120482],"output":[1]},{"input":[0.7570281124497992,0.13855421686746988],"output":[1]},{"input":[0.7108433734939759,0.21285140562248997],"output":[1]},{"input":[0.8734939759036144,0.17269076305220885],"output":[1]},{"input":[0.8514056224899599,0.02208835341365462],"output":[1]},{"input":[0.7530120481927711,0.09036144578313253],"output":[1]},{"input":[0.8353413654618473,0.21084337349397592],"output":[1]},{"input":[0.8152610441767069,0.25903614457831325],"output":[1]},{"input":[0.7791164658634538,0.2971887550200803],"output":[1]},{"input":[0.6244979919678715,0.26907630522088355],"output":[1]},{"input":[0.6244979919678715,0.10642570281124498],"output":[1]},{"input":[0.8433734939759037,0.09839357429718876],"output":[1]},{"input":[0.8775100401606426,0.3453815261044177],"output":[1]},{"input":[0.8955823293172691,0.2710843373493976],"output":[1]},{"input":[0.8072289156626506,0.3333333333333333],"output":[1]},{"input":[0.7811244979919679,0.05421686746987952],"output":[1]}],"graphRaw":{"nodes":[{"id":"input-0","label":"Vstup 1","fixed":true,"x":-450,"y":0,"color":"#8cffaa"},{"id":"input-1","label":"Vstup 2","fixed":true,"x":-450,"y":100,"color":"#8cffaa"},{"id":"output-0","label":"Výstup 1","fixed":true,"x":450,"y":0,"color":"#ff5b63"},{"id":"hidden-0-0","label":""}],"edges":[{"from":"input-0","to":"hidden-0-0","id":"pyLXl","arrows":"to"},{"from":"input-1","to":"hidden-0-0","id":"5ROLO","arrows":"to"},{"from":"hidden-0-0","to":"output-0","id":"Ccitr","arrows":"to"}]}},
-                }
+                    and: {
+                        "configuration": {"inputs": 2, "hiddenLayers": [{"count": "1"}], "hopfield": false, "outputs": 1, "iterations": 1000, "speed": 10, "learningRate": 0.5, "activationFunction": "LOGISTIC", "costFunction": "MSE", "minError": 0.005},
+                        "data": [{"input": [0, 0], "output": [0]}, {"input": [0, 1], "output": [0]}, {"input": [1, 0], "output": [0]}, {"input": [1, 1], "output": [1]}],
+                        "graphRaw": {
+                            "nodes": [{"id": "input-0", "label": "Vstup 1", "fixed": true, "x": -450, "y": 0, "color": "#8cffaa"}, {"id": "input-1", "label": "Vstup 2", "fixed": true, "x": -450, "y": 100, "color": "#8cffaa"}, {"id": "output-0", "label": "Výstup 1", "fixed": true, "x": 450, "y": 0, "color": "#ff5b63"}, {"id": "hidden-0-0", "label": ""}],
+                            "edges": [{"from": "input-0", "to": "hidden-0-0", "id": "42Wbx", "arrows": "to"}, {"from": "input-1", "to": "hidden-0-0", "id": "t0JM3", "arrows": "to"}, {"from": "hidden-0-0", "to": "output-0", "id": "kPu9n", "arrows": "to"}]
+                        }
+                    },
+                    or: {
+                        "configuration": {"inputs": 2, "hiddenLayers": [{"count": "1"}], "hopfield": false, "outputs": 1, "iterations": 1000, "speed": 10, "learningRate": 0.5, "activationFunction": "LOGISTIC", "costFunction": "MSE", "minError": 0.005},
+                        "data": [{"input": [0, 0], "output": [0]}, {"input": [0, 1], "output": [1]}, {"input": [1, 0], "output": [1]}, {"input": [1, 1], "output": [1]}],
+                        "graphRaw": {
+                            "nodes": [{"id": "input-0", "label": "Vstup 1", "fixed": true, "x": -450, "y": 0, "color": "#8cffaa"}, {"id": "input-1", "label": "Vstup 2", "fixed": true, "x": -450, "y": 100, "color": "#8cffaa"}, {"id": "output-0", "label": "Výstup 1", "fixed": true, "x": 450, "y": 0, "color": "#ff5b63"}, {"id": "hidden-0-0", "label": ""}],
+                            "edges": [{"from": "input-0", "to": "hidden-0-0", "id": "42Wbx", "arrows": "to"}, {"from": "input-1", "to": "hidden-0-0", "id": "t0JM3", "arrows": "to"}, {"from": "hidden-0-0", "to": "output-0", "id": "kPu9n", "arrows": "to"}]
+                        }
+                    },
+                    xor: {
+                        "configuration": {"inputs": 2, "hiddenLayers": [{"count": "3"}], "hopfield": false, "outputs": 1, "iterations": 1000, "speed": 10, "learningRate": 0.5, "activationFunction": "LOGISTIC", "costFunction": "MSE", "minError": 0.005},
+                        "data": [{"input": [0, 0], "output": [0]}, {"input": [0, 1], "output": [1]}, {"input": [1, 0], "output": [1]}, {"input": [1, 1], "output": [0]}],
+                        "graphRaw": {
+                            "nodes": [{"id": "input-0", "label": "Vstup 1", "fixed": true, "x": -450, "y": 0, "color": "#8cffaa"}, {"id": "input-1", "label": "Vstup 2", "fixed": true, "x": -450, "y": 100, "color": "#8cffaa"}, {"id": "output-0", "label": "Výstup 1", "fixed": true, "x": 450, "y": 0, "color": "#ff5b63"}, {"id": "hidden-0-0", "label": ""}, {"id": "hidden-0-1", "label": ""}, {"id": "hidden-0-2", "label": ""}],
+                            "edges": [{"from": "input-0", "to": "hidden-0-0", "id": "Sr7EW", "arrows": "to"}, {"from": "input-1", "to": "hidden-0-0", "id": "iNYsl", "arrows": "to"}, {"from": "hidden-0-0", "to": "output-0", "id": "xwKyh", "arrows": "to"}, {"from": "input-0", "to": "hidden-0-1", "id": "ucjZw", "arrows": "to"}, {"from": "input-1", "to": "hidden-0-1", "id": "eoCEh", "arrows": "to"}, {"from": "hidden-0-1", "to": "output-0", "id": "vEPAK", "arrows": "to"}, {
+                                "from": "input-0",
+                                "to": "hidden-0-2",
+                                "id": "MVpOw",
+                                "arrows": "to"
+                            }, {"from": "input-1", "to": "hidden-0-2", "id": "J7yOF", "arrows": "to"}, {"from": "hidden-0-2", "to": "output-0", "id": "NOw8G", "arrows": "to"}]
+                        }
+                    },
+                    vrtule: {
+                        "configuration": {"inputs": 2, "hiddenLayers": [{"count": "2"}, {"count": "4"}], "hopfield": false, "outputs": 1, "iterations": 10000, "speed": 50, "learningRate": 0.03, "activationFunction": "LOGISTIC", "costFunction": "MSE", "minError": 0.005},
+                        "data": [{"input": [0.050200803212851405, 0.9538152610441767], "output": [0]}, {"input": [0.05220883534136546, 0.8895582329317269], "output": [0]}, {"input": [0.03815261044176707, 0.8012048192771084], "output": [0]}, {"input": [0.04417670682730924, 0.7208835341365462], "output": [0]}, {"input": [0.04417670682730924, 0.6325301204819277], "output": [0]}, {"input": [0.04618473895582329, 0.5843373493975904], "output": [0]}, {
+                            "input": [0.6104417670682731, 0.40763052208835343],
+                            "output": [0]
+                        }, {"input": [0.6244979919678715, 0.3353413654618474], "output": [0]}, {"input": [0.6104417670682731, 0.25301204819277107], "output": [0]}, {"input": [0.6184738955823293, 0.13855421686746988], "output": [0]}, {"input": [0.6405622489959839, 0.060240963855421686], "output": [0]}, {"input": [0.7028112449799196, 0.04819277108433735], "output": [0]}, {"input": [0.7389558232931727, 0.16265060240963855], "output": [0]}, {
+                            "input": [0.7469879518072289, 0.26506024096385544],
+                            "output": [0]
+                        }, {"input": [0.7289156626506024, 0.35542168674698793], "output": [0]}, {"input": [0.8232931726907631, 0.36947791164658633], "output": [0]}, {"input": [0.8554216867469879, 0.3313253012048193], "output": [0]}, {"input": [0.8433734939759037, 0.22088353413654618], "output": [0]}, {"input": [0.8413654618473896, 0.13253012048192772], "output": [0]}, {"input": [0.9056224899598394, 0.3092369477911647], "output": [0]}, {
+                            "input": [0.9437751004016064, 0.26506024096385544],
+                            "output": [0]
+                        }, {"input": [0.9257028112449799, 0.0823293172690763], "output": [0]}, {"input": [0.8333333333333334, 0.03815261044176707], "output": [0]}, {"input": [0.929718875502008, 0.36947791164658633], "output": [0]}, {"input": [0.15261044176706828, 0.5943775100401606], "output": [0]}, {"input": [0.3273092369477912, 0.6204819277108434], "output": [0]}, {"input": [0.37349397590361444, 0.6526104417670683], "output": [0]}, {
+                            "input": [0.20481927710843373, 0.7168674698795181],
+                            "output": [0]
+                        }, {"input": [0.16265060240963855, 0.7369477911646586], "output": [0]}, {"input": [0.19076305220883535, 0.8333333333333334], "output": [0]}, {"input": [0.29116465863453816, 0.9156626506024096], "output": [0]}, {"input": [0.39558232931726905, 0.9156626506024096], "output": [0]}, {"input": [0.3493975903614458, 0.7670682730923695], "output": [0]}, {"input": [0.28714859437751006, 0.7650602409638554], "output": [0]}, {
+                            "input": [0.25502008032128515, 0.6124497991967871],
+                            "output": [0]
+                        }, {"input": [0.1686746987951807, 0.9417670682730924], "output": [0]}, {"input": [0.5742971887550201, 0.9337349397590361], "output": [1]}, {"input": [0.5803212851405622, 0.8493975903614458], "output": [1]}, {"input": [0.5622489959839357, 0.7168674698795181], "output": [1]}, {"input": [0.5582329317269076, 0.5783132530120482], "output": [1]}, {"input": [0.6485943775100401, 0.570281124497992], "output": [1]}, {
+                            "input": [0.6224899598393574, 0.6285140562248996],
+                            "output": [1]
+                        }, {"input": [0.5823293172690763, 0.642570281124498], "output": [1]}, {"input": [0.7891566265060241, 0.6305220883534136], "output": [1]}, {"input": [0.8052208835341366, 0.572289156626506], "output": [1]}, {"input": [0.8815261044176707, 0.6867469879518072], "output": [1]}, {"input": [0.7349397590361446, 0.7449799196787149], "output": [1]}, {"input": [0.7208835341365462, 0.6385542168674698], "output": [1]}, {
+                            "input": [0.6586345381526104, 0.785140562248996],
+                            "output": [1]
+                        }, {"input": [0.6666666666666666, 0.8674698795180723], "output": [1]}, {"input": [0.7550200803212851, 0.9377510040160643], "output": [1]}, {"input": [0.9417670682730924, 0.8955823293172691], "output": [1]}, {"input": [0.8373493975903614, 0.8293172690763052], "output": [1]}, {"input": [0.9357429718875502, 0.7208835341365462], "output": [1]}, {"input": [0.9477911646586346, 0.6365461847389559], "output": [1]}, {
+                            "input": [0.9036144578313253, 0.5783132530120482],
+                            "output": [1]
+                        }, {"input": [0.7891566265060241, 0.7650602409638554], "output": [1]}, {"input": [0.8393574297188755, 0.9397590361445783], "output": [1]}, {"input": [0.24899598393574296, 0.43172690763052207], "output": [1]}, {"input": [0.2971887550200803, 0.38353413654618473], "output": [1]}, {"input": [0.16265060240963855, 0.35943775100401604], "output": [1]}, {"input": [0.10441767068273092, 0.35542168674698793], "output": [1]}, {
+                            "input": [0.11646586345381527, 0.25903614457831325],
+                            "output": [1]
+                        }, {"input": [0.0783132530120482, 0.22690763052208834], "output": [1]}, {"input": [0.09236947791164658, 0.13654618473895583], "output": [1]}, {"input": [0.05421686746987952, 0.07630522088353414], "output": [1]}, {"input": [0.11646586345381527, 0.02208835341365462], "output": [1]}, {"input": [0.18473895582329317, 0.03815261044176707], "output": [1]}, {"input": [0.18072289156626506, 0.15060240963855423], "output": [1]}, {
+                            "input": [0.26907630522088355, 0.20481927710843373],
+                            "output": [1]
+                        }, {"input": [0.285140562248996, 0.178714859437751], "output": [1]}, {"input": [0.321285140562249, 0.05823293172690763], "output": [1]}, {"input": [0.26506024096385544, 0.040160642570281124], "output": [1]}, {"input": [0.42570281124497994, 0.10843373493975904], "output": [1]}, {"input": [0.4538152610441767, 0.018072289156626505], "output": [1]}, {"input": [0.357429718875502, 0.17670682730923695], "output": [1]}, {
+                            "input": [0.2971887550200803, 0.23694779116465864],
+                            "output": [1]
+                        }, {"input": [0.20682730923694778, 0.26305220883534136], "output": [1]}, {"input": [0.3453815261044177, 0.26506024096385544], "output": [1]}, {"input": [0.39558232931726905, 0.3614457831325301], "output": [1]}, {"input": [0.37349397590361444, 0.41767068273092367], "output": [1]}, {"input": [0.43172690763052207, 0.37751004016064255], "output": [1]}, {"input": [0.44176706827309237, 0.23293172690763053], "output": [1]}, {
+                            "input": [0.4397590361445783, 0.29518072289156627],
+                            "output": [1]
+                        }, {"input": [0.42570281124497994, 0.19879518072289157], "output": [1]}, {"input": [0.060240963855421686, 0.3092369477911647], "output": [1]}, {"input": [0.05421686746987952, 0.39959839357429716], "output": [1]}, {"input": [0.26706827309236947, 0.3413654618473896], "output": [1]}],
+                        "graphRaw": {
+                            "nodes": [{"id": "input-0", "label": "Vstup 1", "fixed": true, "x": -450, "y": 0, "color": "#8cffaa"}, {"id": "input-1", "label": "Vstup 2", "fixed": true, "x": -450, "y": 100, "color": "#8cffaa"}, {"id": "output-0", "label": "Výstup 1", "fixed": true, "x": 450, "y": 0, "color": "#ff5b63"}, {"id": "hidden-0-0", "label": ""}, {"id": "hidden-0-1", "label": ""}, {"id": "hidden-1-0", "label": ""}, {"id": "hidden-1-1", "label": ""}, {
+                                "id": "hidden-1-2",
+                                "label": ""
+                            }, {"id": "hidden-1-3", "label": ""}],
+                            "edges": [{"from": "input-0", "to": "hidden-0-0", "id": "kHY33", "arrows": "to"}, {"from": "input-1", "to": "hidden-0-0", "id": "nAhVq", "arrows": "to"}, {"from": "input-0", "to": "hidden-0-1", "id": "b1wQP", "arrows": "to"}, {"from": "input-1", "to": "hidden-0-1", "id": "IBKS3", "arrows": "to"}, {"from": "hidden-0-0", "to": "hidden-1-0", "id": "hDAJg", "arrows": "to"}, {"from": "hidden-0-1", "to": "hidden-1-0", "id": "L1soN", "arrows": "to"}, {
+                                "from": "hidden-1-0",
+                                "to": "output-0",
+                                "id": "LEhKR",
+                                "arrows": "to"
+                            }, {"from": "hidden-0-0", "to": "hidden-1-1", "id": "yGdSf", "arrows": "to"}, {"from": "hidden-0-1", "to": "hidden-1-1", "id": "bK1Vn", "arrows": "to"}, {"from": "hidden-1-1", "to": "output-0", "id": "H8bnk", "arrows": "to"}, {"from": "hidden-0-0", "to": "hidden-1-2", "id": "K4tSr", "arrows": "to"}, {"from": "hidden-0-1", "to": "hidden-1-2", "id": "pvSZs", "arrows": "to"}, {"from": "hidden-1-2", "to": "output-0", "id": "GeC5W", "arrows": "to"}, {
+                                "from": "hidden-0-0",
+                                "to": "hidden-1-3",
+                                "id": "5URaP",
+                                "arrows": "to"
+                            }, {"from": "hidden-0-1", "to": "hidden-1-3", "id": "f8KEL", "arrows": "to"}, {"from": "hidden-1-3", "to": "output-0", "id": "KOZsB", "arrows": "to"}]
+                        }
+                    },
+                    kruh: {
+                        "configuration": {"inputs": 2, "hiddenLayers": [{"count": 3}], "hopfield": false, "outputs": 1, "iterations": 2000, "speed": 15, "learningRate": 0.1, "activationFunction": "LOGISTIC", "costFunction": "MSE", "minError": 0.005},
+                        "data": [{"input": [0.44377510040160645, 0.6024096385542169], "output": [0]}, {"input": [0.38755020080321284, 0.536144578313253], "output": [0]}, {"input": [0.36947791164658633, 0.43172690763052207], "output": [0]}, {"input": [0.4397590361445783, 0.3534136546184739], "output": [0]}, {"input": [0.5823293172690763, 0.35542168674698793], "output": [0]}, {"input": [0.6445783132530121, 0.42369477911646586], "output": [0]}, {
+                            "input": [0.6104417670682731, 0.572289156626506],
+                            "output": [0]
+                        }, {"input": [0.4799196787148594, 0.6365461847389559], "output": [0]}, {"input": [0.3534136546184739, 0.5461847389558233], "output": [0]}, {"input": [0.4397590361445783, 0.39759036144578314], "output": [0]}, {"input": [0.4959839357429719, 0.5180722891566265], "output": [0]}, {"input": [0.5401606425702812, 0.5562248995983936], "output": [0]}, {"input": [0.5020080321285141, 0.4457831325301205], "output": [0]}, {
+                            "input": [0.5, 0.3714859437751004],
+                            "output": [0]
+                        }, {"input": [0.6244979919678715, 0.5060240963855421], "output": [0]}, {"input": [0.5622489959839357, 0.6285140562248996], "output": [0]}, {"input": [0.44377510040160645, 0.5401606425702812], "output": [0]}, {"input": [0.41967871485943775, 0.45180722891566266], "output": [0]}, {"input": [0.3393574297188755, 0.8152610441767069], "output": [1]}, {"input": [0.23092369477911648, 0.7469879518072289], "output": [1]}, {
+                            "input": [0.15461847389558234, 0.6506024096385542],
+                            "output": [1]
+                        }, {"input": [0.18072289156626506, 0.46987951807228917], "output": [1]}, {"input": [0.1686746987951807, 0.2931726907630522], "output": [1]}, {"input": [0.178714859437751, 0.19678714859437751], "output": [1]}, {"input": [0.3674698795180723, 0.08835341365461848], "output": [1]}, {"input": [0.606425702811245, 0.09839357429718876], "output": [1]}, {"input": [0.7088353413654619, 0.19477911646586346], "output": [1]}, {
+                            "input": [0.6666666666666666, 0.2289156626506024],
+                            "output": [1]
+                        }, {"input": [0.8714859437751004, 0.3313253012048193], "output": [1]}, {"input": [0.7911646586345381, 0.5622489959839357], "output": [1]}, {"input": [0.7610441767068273, 0.7188755020080321], "output": [1]}, {"input": [0.678714859437751, 0.8072289156626506], "output": [1]}, {"input": [0.42570281124497994, 0.7811244979919679], "output": [1]}, {"input": [0.28112449799196787, 0.7168674698795181], "output": [1]}, {
+                            "input": [0.2289156626506024, 0.570281124497992],
+                            "output": [1]
+                        }, {"input": [0.27710843373493976, 0.3714859437751004], "output": [1]}, {"input": [0.41967871485943775, 0.20281124497991967], "output": [1]}, {"input": [0.5883534136546185, 0.22289156626506024], "output": [1]}, {"input": [0.7570281124497992, 0.3614457831325301], "output": [1]}, {"input": [0.7409638554216867, 0.463855421686747], "output": [1]}, {"input": [0.8654618473895582, 0.5441767068273092], "output": [1]}, {
+                            "input": [0.8975903614457831, 0.7248995983935743],
+                            "output": [1]
+                        }, {"input": [0.8995983935742972, 0.8995983935742972], "output": [1]}, {"input": [0.7891566265060241, 0.9698795180722891], "output": [1]}, {"input": [0.41365461847389556, 0.9337349397590361], "output": [1]}, {"input": [0.11044176706827309, 0.8775100401606426], "output": [1]}, {"input": [0.05823293172690763, 0.8493975903614458], "output": [1]}, {"input": [0.09036144578313253, 0.5060240963855421], "output": [1]}, {
+                            "input": [0.10642570281124498, 0.3654618473895582],
+                            "output": [1]
+                        }, {"input": [0.10040160642570281, 0.1927710843373494], "output": [1]}, {"input": [0.23293172690763053, 0.11244979919678715], "output": [1]}, {"input": [0.8012048192771084, 0.12449799196787148], "output": [1]}, {"input": [0.927710843373494, 0.2710843373493976], "output": [1]}, {"input": [0.6044176706827309, 0.9457831325301205], "output": [1]}],
+                        "graphRaw": {
+                            "nodes": [{"id": "input-0", "label": "Vstup 1", "fixed": true, "x": -450, "y": 0, "color": "#8cffaa"}, {"id": "input-1", "label": "Vstup 2", "fixed": true, "x": -450, "y": 100, "color": "#8cffaa"}, {"id": "output-0", "label": "Výstup 1", "fixed": true, "x": 450, "y": 0, "color": "#ff5b63"}, {"id": "hidden-0-0", "label": ""}, {"id": "hidden-0-1", "label": ""}, {"id": "hidden-0-2", "label": ""}],
+                            "edges": [{"from": "input-0", "to": "hidden-0-0", "id": "V0JPG", "arrows": "to"}, {"from": "input-1", "to": "hidden-0-0", "id": "8ep62", "arrows": "to"}, {"from": "hidden-0-0", "to": "output-0", "id": "RFDnJ", "arrows": "to"}, {"from": "input-0", "to": "hidden-0-1", "id": "bemQx", "arrows": "to"}, {"from": "input-1", "to": "hidden-0-1", "id": "N7ctq", "arrows": "to"}, {"from": "hidden-0-1", "to": "output-0", "id": "M1z4b", "arrows": "to"}, {
+                                "from": "input-0",
+                                "to": "hidden-0-2",
+                                "id": "iIcB2",
+                                "arrows": "to"
+                            }, {"from": "input-1", "to": "hidden-0-2", "id": "VE9SC", "arrows": "to"}, {"from": "hidden-0-2", "to": "output-0", "id": "VtCqe", "arrows": "to"}]
+                        }
+                    },
+                    mnoziny: {
+                        "configuration": {"inputs": 2, "hiddenLayers": [{"count": "2"}], "hopfield": false, "outputs": 1, "iterations": 1500, "speed": 10, "learningRate": 0.5, "activationFunction": "LOGISTIC", "costFunction": "MSE", "minError": 0.0005},
+                        "data": [{"input": [0.1285140562248996, 0.9136546184738956], "output": [0]}, {"input": [0.07429718875502007, 0.8373493975903614], "output": [0]}, {"input": [0.16265060240963855, 0.7088353413654619], "output": [0]}, {"input": [0.28714859437751006, 0.8614457831325302], "output": [0]}, {"input": [0.25903614457831325, 0.8313253012048193], "output": [0]}, {"input": [0.15863453815261044, 0.6506024096385542], "output": [0]}, {
+                            "input": [0.13453815261044177, 0.7289156626506024],
+                            "output": [0]
+                        }, {"input": [0.3092369477911647, 0.893574297188755], "output": [0]}, {"input": [0.1646586345381526, 0.8855421686746988], "output": [0]}, {"input": [0.22690763052208834, 0.7891566265060241], "output": [0]}, {"input": [0.15461847389558234, 0.7570281124497992], "output": [0]}, {"input": [0.1706827309236948, 0.6224899598393574], "output": [0]}, {"input": [0.12248995983935743, 0.6244979919678715], "output": [0]}, {
+                            "input": [0.11847389558232932, 0.6686746987951807],
+                            "output": [0]
+                        }, {"input": [0.3714859437751004, 0.7469879518072289], "output": [0]}, {"input": [0.39558232931726905, 0.7710843373493976], "output": [0]}, {"input": [0.2710843373493976, 0.6927710843373494], "output": [0]}, {"input": [0.2991967871485944, 0.7309236947791165], "output": [0]}, {"input": [0.3112449799196787, 0.7771084337349398], "output": [0]}, {"input": [0.2289156626506024, 0.6847389558232931], "output": [0]}, {
+                            "input": [0.178714859437751, 0.7951807228915663],
+                            "output": [0]
+                        }, {"input": [0.7530120481927711, 0.3493975903614458], "output": [1]}, {"input": [0.6947791164658634, 0.3192771084337349], "output": [1]}, {"input": [0.5943775100401606, 0.17269076305220885], "output": [1]}, {"input": [0.6726907630522089, 0.0783132530120482], "output": [1]}, {"input": [0.7570281124497992, 0.13855421686746988], "output": [1]}, {"input": [0.7108433734939759, 0.21285140562248997], "output": [1]}, {
+                            "input": [0.8734939759036144, 0.17269076305220885],
+                            "output": [1]
+                        }, {"input": [0.8514056224899599, 0.02208835341365462], "output": [1]}, {"input": [0.7530120481927711, 0.09036144578313253], "output": [1]}, {"input": [0.8353413654618473, 0.21084337349397592], "output": [1]}, {"input": [0.8152610441767069, 0.25903614457831325], "output": [1]}, {"input": [0.7791164658634538, 0.2971887550200803], "output": [1]}, {"input": [0.6244979919678715, 0.26907630522088355], "output": [1]}, {
+                            "input": [0.6244979919678715, 0.10642570281124498],
+                            "output": [1]
+                        }, {"input": [0.8433734939759037, 0.09839357429718876], "output": [1]}, {"input": [0.8775100401606426, 0.3453815261044177], "output": [1]}, {"input": [0.8955823293172691, 0.2710843373493976], "output": [1]}, {"input": [0.8072289156626506, 0.3333333333333333], "output": [1]}, {"input": [0.7811244979919679, 0.05421686746987952], "output": [1]}, {"input": [0.7068273092369478, 0.751004016064257], "output": [0.5]}, {
+                            "input": [0.6827309236947792, 0.6927710843373494],
+                            "output": [0.5]
+                        }, {"input": [0.6526104417670683, 0.7389558232931727], "output": [0.5]}, {"input": [0.7128514056224899, 0.7951807228915663], "output": [0.5]}, {"input": [0.7971887550200804, 0.785140562248996], "output": [0.5]}, {"input": [0.7590361445783133, 0.7349397590361446], "output": [0.5]}, {"input": [0.7309236947791165, 0.8232931726907631], "output": [0.5]}, {"input": [0.7911646586345381, 0.8253012048192772], "output": [0.5]}, {
+                            "input": [0.8534136546184738, 0.7550200803212851],
+                            "output": [0.5]
+                        }, {"input": [0.8112449799196787, 0.6907630522088354], "output": [0.5]}, {"input": [0.7570281124497992, 0.6666666666666666], "output": [0.5]}, {"input": [0.7911646586345381, 0.6485943775100401], "output": [0.5]}, {"input": [0.8413654618473896, 0.7248995983935743], "output": [0.5]}, {"input": [0.8554216867469879, 0.8273092369477911], "output": [0.5]}, {"input": [0.8835341365461847, 0.8433734939759037], "output": [0.5]}, {
+                            "input": [0.9136546184738956, 0.7630522088353414],
+                            "output": [0.5]
+                        }, {"input": [0.8795180722891566, 0.7590361445783133], "output": [0.5]}, {"input": [0.8433734939759037, 0.7971887550200804], "output": [0.5]}, {"input": [0.821285140562249, 0.8253012048192772], "output": [0.5]}, {"input": [0.8032128514056225, 0.8694779116465864], "output": [0.5]}, {"input": [0.748995983935743, 0.8755020080321285], "output": [0.5]}, {"input": [0.7610441767068273, 0.8112449799196787], "output": [0.5]}, {
+                            "input": [0.7469879518072289, 0.7771084337349398],
+                            "output": [0.5]
+                        }, {"input": [0.7228915662650602, 0.7068273092369478], "output": [0.5]}, {"input": [0.2289156626506024, 0.39357429718875503], "output": [0.5]}, {"input": [0.1646586345381526, 0.2971887550200803], "output": [0.5]}, {"input": [0.19678714859437751, 0.19678714859437751], "output": [0.5]}, {"input": [0.13654618473895583, 0.2248995983935743], "output": [0.5]}, {
+                            "input": [0.28112449799196787, 0.3092369477911647],
+                            "output": [0.5]
+                        }, {"input": [0.2891566265060241, 0.3032128514056225], "output": [0.5]}, {"input": [0.26104417670682734, 0.25502008032128515], "output": [0.5]}, {"input": [0.20481927710843373, 0.3313253012048193], "output": [0.5]}, {"input": [0.29518072289156627, 0.3534136546184739], "output": [0.5]}, {"input": [0.3152610441767068, 0.3413654618473896], "output": [0.5]}, {
+                            "input": [0.21285140562248997, 0.30522088353413657],
+                            "output": [0.5]
+                        }, {"input": [0.3514056224899598, 0.26506024096385544], "output": [0.5]}, {"input": [0.26907630522088355, 0.20883534136546184], "output": [0.5]}, {"input": [0.08433734939759036, 0.29116465863453816], "output": [0.5]}, {"input": [0.15461847389558234, 0.16666666666666666], "output": [0.5]}, {"input": [0.1646586345381526, 0.26706827309236947], "output": [0.5]}, {
+                            "input": [0.5622489959839357, 0.6024096385542169],
+                            "output": [0.5]
+                        }, {"input": [0.4839357429718876, 0.5301204819277109], "output": [0.5]}, {"input": [0.3755020080321285, 0.43172690763052207], "output": [0.5]}, {"input": [0.39156626506024095, 0.42570281124497994], "output": [0.5]}, {"input": [0.3534136546184739, 0.4819277108433735], "output": [0.5]}, {"input": [0.46184738955823296, 0.5742971887550201], "output": [0.5]}, {
+                            "input": [0.5441767068273092, 0.6305220883534136],
+                            "output": [0.5]
+                        }, {"input": [0.6405622489959839, 0.6626506024096386], "output": [0.5]}, {"input": [0.642570281124498, 0.5461847389558233], "output": [0.5]}, {"input": [0.5542168674698795, 0.4979919678714859], "output": [0.5]}, {"input": [0.4738955823293173, 0.39558232931726905], "output": [0.5]}, {"input": [0.40963855421686746, 0.3393574297188755], "output": [0.5]}, {"input": [0.4759036144578313, 0.4497991967871486], "output": [0.5]}],
+                        "graphRaw": {
+                            "nodes": [{"id": "input-0", "label": "Vstup 1", "fixed": true, "x": -450, "y": 0, "color": "#8cffaa"}, {"id": "input-1", "label": "Vstup 2", "fixed": true, "x": -450, "y": 100, "color": "#8cffaa"}, {"id": "output-0", "label": "Výstup 1", "fixed": true, "x": 450, "y": 0, "color": "#ff5b63"}, {"id": "hidden-0-0", "label": ""}, {"id": "hidden-0-1", "label": ""}],
+                            "edges": [{"from": "input-0", "to": "hidden-0-0", "id": "gPHkD", "arrows": "to"}, {"from": "input-1", "to": "hidden-0-0", "id": "IoggL", "arrows": "to"}, {"from": "hidden-0-0", "to": "output-0", "id": "drFVb", "arrows": "to"}, {"from": "input-0", "to": "hidden-0-1", "id": "ZbDJW", "arrows": "to"}, {"from": "input-1", "to": "hidden-0-1", "id": "uMcUc", "arrows": "to"}, {"from": "hidden-0-1", "to": "output-0", "id": "4Vbhy", "arrows": "to"}]
+                        }
+                    },
+                    string: {
+                        "configuration": {"inputs": 2, "hiddenLayers": [{"count": "10"}], "hopfield": false, "outputs": 1, "iterations": 20000, "speed": 200, "learningRate": 0.1, "activationFunction": "LOGISTIC", "costFunction": "BINARY", "minError": 0},
+                        "data": [{"input": [0.14457831325301204, 0.10642570281124498], "output": ["kočka"]}, {"input": [0.142570281124498, 0.25903614457831325], "output": ["kočka"]}, {"input": [0.16666666666666666, 0.3634538152610442], "output": ["kočka"]}, {"input": [0.3072289156626506, 0.4759036144578313], "output": ["kočka"]}, {"input": [0.5040160642570282, 0.5562248995983936], "output": ["kočka"]}, {
+                            "input": [0.6947791164658634, 0.608433734939759],
+                            "output": ["kočka"]
+                        }, {"input": [0.857429718875502, 0.7690763052208835], "output": ["kočka"]}, {"input": [0.893574297188755, 0.8232931726907631], "output": ["kočka"]}, {"input": [0.9337349397590361, 0.9457831325301205], "output": ["kočka"]}, {"input": [0.8253012048192772, 0.7128514056224899], "output": ["kočka"]}, {"input": [0.7690763052208835, 0.6566265060240963], "output": ["kočka"]}, {
+                            "input": [0.6305220883534136, 0.5883534136546185],
+                            "output": ["kočka"]
+                        }, {"input": [0.5903614457831325, 0.5803212851405622], "output": ["kočka"]}, {"input": [0.43775100401606426, 0.5461847389558233], "output": ["kočka"]}, {"input": [0.41365461847389556, 0.5180722891566265], "output": ["kočka"]}, {"input": [0.3795180722891566, 0.4919678714859438], "output": ["kočka"]}, {"input": [0.26907630522088355, 0.4397590361445783], "output": ["kočka"]}, {
+                            "input": [0.2289156626506024, 0.40763052208835343],
+                            "output": ["kočka"]
+                        }, {"input": [0.20080321285140562, 0.38353413654618473], "output": ["kočka"]}, {"input": [0.16666666666666666, 0.321285140562249], "output": ["kočka"]}, {"input": [0.14859437751004015, 0.27710843373493976], "output": ["kočka"]}, {"input": [0.13453815261044177, 0.19678714859437751], "output": ["kočka"]}, {"input": [0.142570281124498, 0.15261044176706828], "output": ["kočka"]}, {
+                            "input": [0.13453815261044177, 0.06827309236947791],
+                            "output": ["kočka"]
+                        }, {"input": [0.09437751004016064, 0.03815261044176707], "output": ["kočka"]}, {"input": [0.06827309236947791, 0.03413654618473896], "output": ["kočka"]}, {"input": [0.040160642570281124, 0.020080321285140562], "output": ["kočka"]}, {"input": [0.02208835341365462, 0.01606425702811245], "output": ["kočka"]}, {"input": [0.03815261044176707, 0.8614457831325302], "output": ["pes"]}, {
+                            "input": [0.1746987951807229, 0.751004016064257],
+                            "output": ["pes"]
+                        }, {"input": [0.20682730923694778, 0.6947791164658634], "output": ["pes"]}, {"input": [0.26305220883534136, 0.6325301204819277], "output": ["pes"]}, {"input": [0.2971887550200803, 0.5983935742971888], "output": ["pes"]}, {"input": [0.3132530120481928, 0.5301204819277109], "output": ["pes"]}, {"input": [0.3493975903614458, 0.46586345381526106], "output": ["pes"]}, {
+                            "input": [0.3634538152610442, 0.42369477911646586],
+                            "output": ["pes"]
+                        }, {"input": [0.37349397590361444, 0.39156626506024095], "output": ["pes"]}, {"input": [0.39156626506024095, 0.3353413654618474], "output": ["pes"]}, {"input": [0.42168674698795183, 0.285140562248996], "output": ["pes"]}, {"input": [0.4598393574297189, 0.2429718875502008], "output": ["pes"]}, {"input": [0.5100401606425703, 0.21084337349397592], "output": ["pes"]}, {
+                            "input": [0.6445783132530121, 0.13654618473895583],
+                            "output": ["pes"]
+                        }, {"input": [0.6767068273092369, 0.11646586345381527], "output": ["pes"]}, {"input": [0.7208835341365462, 0.06224899598393574], "output": ["pes"]}, {"input": [0.7550200803212851, 0.03815261044176707], "output": ["pes"]}, {"input": [0.5642570281124498, 0.1927710843373494], "output": ["pes"]}, {"input": [0.6164658634538153, 0.15863453815261044], "output": ["pes"]}, {
+                            "input": [0.15060240963855423, 0.7630522088353414],
+                            "output": ["pes"]
+                        }, {"input": [0.10843373493975904, 0.8052208835341366], "output": ["pes"]}, {"input": [0.0823293172690763, 0.8353413654618473], "output": ["pes"]}, {"input": [0.4959839357429719, 0.9518072289156626], "output": ["ovce"]}, {"input": [0.5542168674698795, 0.9176706827309237], "output": ["ovce"]}, {"input": [0.5542168674698795, 0.8895582329317269], "output": ["ovce"]}, {
+                            "input": [0.6345381526104418, 0.7168674698795181],
+                            "output": ["ovce"]
+                        }, {"input": [0.7329317269076305, 0.6285140562248996], "output": ["ovce"]}, {"input": [0.7429718875502008, 0.6164658634538153], "output": ["ovce"]}, {"input": [0.7710843373493976, 0.5783132530120482], "output": ["ovce"]}, {"input": [0.857429718875502, 0.41767068273092367], "output": ["ovce"]}, {"input": [0.8694779116465864, 0.3895582329317269], "output": ["ovce"]}, {
+                            "input": [0.9357429718875502, 0.23694779116465864],
+                            "output": ["ovce"]
+                        }, {"input": [0.9096385542168675, 0.3253012048192771], "output": ["ovce"]}, {"input": [0.9257028112449799, 0.285140562248996], "output": ["ovce"]}, {"input": [0.9317269076305221, 0.26706827309236947], "output": ["ovce"]}, {"input": [0.8855421686746988, 0.357429718875502], "output": ["ovce"]}, {"input": [0.8373493975903614, 0.46987951807228917], "output": ["ovce"]}, {
+                            "input": [0.8132530120481928, 0.5080321285140562],
+                            "output": ["ovce"]
+                        }, {"input": [0.7991967871485943, 0.5401606425702812], "output": ["ovce"]}, {"input": [0.7128514056224899, 0.6485943775100401], "output": ["ovce"]}, {"input": [0.6847389558232931, 0.6767068273092369], "output": ["ovce"]}, {"input": [0.6546184738955824, 0.6867469879518072], "output": ["ovce"]}, {"input": [0.6224899598393574, 0.7449799196787149], "output": ["ovce"]}, {
+                            "input": [0.6104417670682731, 0.7751004016064257],
+                            "output": ["ovce"]
+                        }, {"input": [0.6024096385542169, 0.8092369477911646], "output": ["ovce"]}, {"input": [0.5883534136546185, 0.8413654618473896], "output": ["ovce"]}, {"input": [0.572289156626506, 0.8634538152610441], "output": ["ovce"]}, {"input": [0.4738955823293173, 0.9618473895582329], "output": ["ovce"]}, {"input": [0.45582329317269077, 0.9799196787148594], "output": ["ovce"]}, {
+                            "input": [0.5261044176706827, 0.9417670682730924],
+                            "output": ["ovce"]
+                        }, {"input": [0.9558232931726908, 0.22088353413654618], "output": ["ovce"]}, {"input": [0.963855421686747, 0.19076305220883535], "output": ["ovce"]}, {"input": [0.9839357429718876, 0.1746987951807229], "output": ["ovce"]}, {"input": [0.3253012048192771, 0.9136546184738956], "output": ["kočka"]}, {"input": [0.25903614457831325, 0.9116465863453815], "output": ["kočka"]}, {
+                            "input": [0.24497991967871485, 0.8795180722891566],
+                            "output": ["kočka"]
+                        }, {"input": [0.30120481927710846, 0.8313253012048193], "output": ["kočka"]}, {"input": [0.3393574297188755, 0.8694779116465864], "output": ["kočka"]}, {"input": [0.2891566265060241, 0.8895582329317269], "output": ["kočka"]}, {"input": [0.3815261044176707, 0.10843373493975904], "output": ["ovce"]}, {"input": [0.3353413654618474, 0.10441767068273092], "output": ["ovce"]}, {
+                            "input": [0.3353413654618474, 0.07630522088353414],
+                            "output": ["ovce"]
+                        }, {"input": [0.37751004016064255, 0.05220883534136546], "output": ["ovce"]}, {"input": [0.41566265060240964, 0.060240963855421686], "output": ["ovce"]}, {"input": [0.3855421686746988, 0.08433734939759036], "output": ["ovce"]}, {"input": [0.6345381526104418, 0.285140562248996], "output": ["pes"]}, {"input": [0.6706827309236948, 0.2751004016064257], "output": ["pes"]}, {
+                            "input": [0.6686746987951807, 0.2469879518072289],
+                            "output": ["pes"]
+                        }, {"input": [0.6526104417670683, 0.2248995983935743], "output": ["pes"]}, {"input": [0.6586345381526104, 0.1927710843373494], "output": ["pes"]}, {"input": [0.6445783132530121, 0.18072289156626506], "output": ["pes"]}, {"input": [0.6164658634538153, 0.2248995983935743], "output": ["pes"]}, {"input": [0.6265060240963856, 0.24899598393574296], "output": ["pes"]}, {
+                            "input": [0.5883534136546185, 0.25301204819277107],
+                            "output": ["pes"]
+                        }, {"input": [0.536144578313253, 0.25100401606425704], "output": ["pes"]}],
+                        "graphRaw": {
+                            "nodes": [{"id": "input-0", "label": "Vstup 1", "fixed": true, "x": -450, "y": 0, "color": "#8cffaa"}, {"id": "input-1", "label": "Vstup 2", "fixed": true, "x": -450, "y": 100, "color": "#8cffaa"}, {"id": "output-0", "label": "Výstup 1", "fixed": true, "x": 450, "y": 0, "color": "#ff5b63"}, {"id": "output-1", "label": "Výstup 2", "fixed": true, "x": 450, "y": 100, "color": "#ff5b63"}, {
+                                "id": "output-2",
+                                "label": "Výstup 3",
+                                "fixed": true,
+                                "x": 450,
+                                "y": 200,
+                                "color": "#ff5b63"
+                            }, {"id": "hidden-0-0", "label": ""}, {"id": "hidden-0-1", "label": ""}, {"id": "hidden-0-2", "label": ""}, {"id": "hidden-0-3", "label": ""}, {"id": "hidden-0-4", "label": ""}, {"id": "hidden-0-5", "label": ""}, {"id": "hidden-0-6", "label": ""}, {"id": "hidden-0-7", "label": ""}, {"id": "hidden-0-8", "label": ""}, {"id": "hidden-0-9", "label": ""}],
+                            "edges": [{"from": "input-0", "to": "hidden-0-0", "id": "0tZu3", "arrows": "to"}, {"from": "input-1", "to": "hidden-0-0", "id": "VStzg", "arrows": "to"}, {"from": "hidden-0-0", "to": "output-0", "id": "acLEq", "arrows": "to"}, {"from": "hidden-0-0", "to": "output-1", "id": "uPgZt", "arrows": "to"}, {"from": "hidden-0-0", "to": "output-2", "id": "O5Tac", "arrows": "to"}, {"from": "input-0", "to": "hidden-0-1", "id": "NhLhl", "arrows": "to"}, {
+                                "from": "input-1",
+                                "to": "hidden-0-1",
+                                "id": "7vW9z",
+                                "arrows": "to"
+                            }, {"from": "hidden-0-1", "to": "output-0", "id": "FL8HA", "arrows": "to"}, {"from": "hidden-0-1", "to": "output-1", "id": "4x79M", "arrows": "to"}, {"from": "hidden-0-1", "to": "output-2", "id": "5pF45", "arrows": "to"}, {"from": "input-0", "to": "hidden-0-2", "id": "nhhJj", "arrows": "to"}, {"from": "input-1", "to": "hidden-0-2", "id": "3AyVt", "arrows": "to"}, {"from": "hidden-0-2", "to": "output-0", "id": "J0M7E", "arrows": "to"}, {
+                                "from": "hidden-0-2",
+                                "to": "output-1",
+                                "id": "tbhyZ",
+                                "arrows": "to"
+                            }, {"from": "hidden-0-2", "to": "output-2", "id": "4tl16", "arrows": "to"}, {"from": "input-0", "to": "hidden-0-3", "id": "nnYGp", "arrows": "to"}, {"from": "input-1", "to": "hidden-0-3", "id": "yxzYx", "arrows": "to"}, {"from": "hidden-0-3", "to": "output-0", "id": "Iq5Vh", "arrows": "to"}, {"from": "hidden-0-3", "to": "output-1", "id": "tT0HY", "arrows": "to"}, {"from": "hidden-0-3", "to": "output-2", "id": "PTX3m", "arrows": "to"}, {
+                                "from": "input-0",
+                                "to": "hidden-0-4",
+                                "id": "caf4P",
+                                "arrows": "to"
+                            }, {"from": "input-1", "to": "hidden-0-4", "id": "01Abk", "arrows": "to"}, {"from": "hidden-0-4", "to": "output-0", "id": "xf4Az", "arrows": "to"}, {"from": "hidden-0-4", "to": "output-1", "id": "Gp8qN", "arrows": "to"}, {"from": "hidden-0-4", "to": "output-2", "id": "OdAkr", "arrows": "to"}, {"from": "input-0", "to": "hidden-0-5", "id": "GJgAS", "arrows": "to"}, {"from": "input-1", "to": "hidden-0-5", "id": "ki7nz", "arrows": "to"}, {
+                                "from": "hidden-0-5",
+                                "to": "output-0",
+                                "id": "3ka9e",
+                                "arrows": "to"
+                            }, {"from": "hidden-0-5", "to": "output-1", "id": "5I72N", "arrows": "to"}, {"from": "hidden-0-5", "to": "output-2", "id": "XTFFi", "arrows": "to"}, {"from": "input-0", "to": "hidden-0-6", "id": "JxVLx", "arrows": "to"}, {"from": "input-1", "to": "hidden-0-6", "id": "7RG6B", "arrows": "to"}, {"from": "hidden-0-6", "to": "output-0", "id": "6iPkN", "arrows": "to"}, {"from": "hidden-0-6", "to": "output-1", "id": "c2QXy", "arrows": "to"}, {
+                                "from": "hidden-0-6",
+                                "to": "output-2",
+                                "id": "z7bhE",
+                                "arrows": "to"
+                            }, {"from": "input-0", "to": "hidden-0-7", "id": "W4Vfl", "arrows": "to"}, {"from": "input-1", "to": "hidden-0-7", "id": "iiQqX", "arrows": "to"}, {"from": "hidden-0-7", "to": "output-0", "id": "ogfhb", "arrows": "to"}, {"from": "hidden-0-7", "to": "output-1", "id": "wwjXf", "arrows": "to"}, {"from": "hidden-0-7", "to": "output-2", "id": "PLgFw", "arrows": "to"}, {"from": "input-0", "to": "hidden-0-8", "id": "lijIV", "arrows": "to"}, {
+                                "from": "input-1",
+                                "to": "hidden-0-8",
+                                "id": "xWd2M",
+                                "arrows": "to"
+                            }, {"from": "hidden-0-8", "to": "output-0", "id": "0IT8q", "arrows": "to"}, {"from": "hidden-0-8", "to": "output-1", "id": "mXG1T", "arrows": "to"}, {"from": "hidden-0-8", "to": "output-2", "id": "YUiEB", "arrows": "to"}, {"from": "input-0", "to": "hidden-0-9", "id": "ikWPc", "arrows": "to"}, {"from": "input-1", "to": "hidden-0-9", "id": "tI64E", "arrows": "to"}, {"from": "hidden-0-9", "to": "output-0", "id": "efC39", "arrows": "to"}, {
+                                "from": "hidden-0-9",
+                                "to": "output-1",
+                                "id": "CjB49",
+                                "arrows": "to"
+                            }, {"from": "hidden-0-9", "to": "output-2", "id": "bvKLH", "arrows": "to"}]
+                        }
+                    },
+                    iris: {
+                        "configuration": {"inputs": 4, "hiddenLayers": [{"count": "3"}], "hopfield": false, "outputs": 1, "iterations": 1000, "speed": 1, "learningRate": 0.5, "activationFunction": "LOGISTIC", "costFunction": "BINARY", "minError": 0},
+                        "data": [{"input": [5.1, 3.5, 1.4, 0.2], "output": ["Iris-setosa"]}, {"input": [4.9, 3, 1.4, 0.2], "output": ["Iris-setosa"]}, {"input": [4.7, 3.2, 1.3, 0.2], "output": ["Iris-setosa"]}, {"input": [4.6, 3.1, 1.5, 0.2], "output": ["Iris-setosa"]}, {"input": [5, 3.6, 1.4, 0.2], "output": ["Iris-setosa"]}, {"input": [5.4, 3.9, 1.7, 0.4], "output": ["Iris-setosa"]}, {"input": [4.6, 3.4, 1.4, 0.3], "output": ["Iris-setosa"]}, {
+                            "input": [5, 3.4, 1.5, 0.2],
+                            "output": ["Iris-setosa"]
+                        }, {"input": [4.4, 2.9, 1.4, 0.2], "output": ["Iris-setosa"]}, {"input": [4.9, 3.1, 1.5, 0.1], "output": ["Iris-setosa"]}, {"input": [5.4, 3.7, 1.5, 0.2], "output": ["Iris-setosa"]}, {"input": [4.8, 3.4, 1.6, 0.2], "output": ["Iris-setosa"]}, {"input": [4.8, 3, 1.4, 0.1], "output": ["Iris-setosa"]}, {"input": [4.3, 3, 1.1, 0.1], "output": ["Iris-setosa"]}, {"input": [5.8, 4, 1.2, 0.2], "output": ["Iris-setosa"]}, {
+                            "input": [5.7, 4.4, 1.5, 0.4],
+                            "output": ["Iris-setosa"]
+                        }, {"input": [5.4, 3.9, 1.3, 0.4], "output": ["Iris-setosa"]}, {"input": [5.1, 3.5, 1.4, 0.3], "output": ["Iris-setosa"]}, {"input": [5.7, 3.8, 1.7, 0.3], "output": ["Iris-setosa"]}, {"input": [5.1, 3.8, 1.5, 0.3], "output": ["Iris-setosa"]}, {"input": [5.4, 3.4, 1.7, 0.2], "output": ["Iris-setosa"]}, {"input": [5.1, 3.7, 1.5, 0.4], "output": ["Iris-setosa"]}, {"input": [4.6, 3.6, 1, 0.2], "output": ["Iris-setosa"]}, {
+                            "input": [5.1, 3.3, 1.7, 0.5],
+                            "output": ["Iris-setosa"]
+                        }, {"input": [4.8, 3.4, 1.9, 0.2], "output": ["Iris-setosa"]}, {"input": [5, 3, 1.6, 0.2], "output": ["Iris-setosa"]}, {"input": [5, 3.4, 1.6, 0.4], "output": ["Iris-setosa"]}, {"input": [5.2, 3.5, 1.5, 0.2], "output": ["Iris-setosa"]}, {"input": [5.2, 3.4, 1.4, 0.2], "output": ["Iris-setosa"]}, {"input": [4.7, 3.2, 1.6, 0.2], "output": ["Iris-setosa"]}, {"input": [4.8, 3.1, 1.6, 0.2], "output": ["Iris-setosa"]}, {
+                            "input": [5.4, 3.4, 1.5, 0.4],
+                            "output": ["Iris-setosa"]
+                        }, {"input": [5.2, 4.1, 1.5, 0.1], "output": ["Iris-setosa"]}, {"input": [5.5, 4.2, 1.4, 0.2], "output": ["Iris-setosa"]}, {"input": [4.9, 3.1, 1.5, 0.1], "output": ["Iris-setosa"]}, {"input": [5, 3.2, 1.2, 0.2], "output": ["Iris-setosa"]}, {"input": [5.5, 3.5, 1.3, 0.2], "output": ["Iris-setosa"]}, {"input": [4.9, 3.1, 1.5, 0.1], "output": ["Iris-setosa"]}, {"input": [4.4, 3, 1.3, 0.2], "output": ["Iris-setosa"]}, {
+                            "input": [5.1, 3.4, 1.5, 0.2],
+                            "output": ["Iris-setosa"]
+                        }, {"input": [5, 3.5, 1.3, 0.3], "output": ["Iris-setosa"]}, {"input": [4.5, 2.3, 1.3, 0.3], "output": ["Iris-setosa"]}, {"input": [4.4, 3.2, 1.3, 0.2], "output": ["Iris-setosa"]}, {"input": [5, 3.5, 1.6, 0.6], "output": ["Iris-setosa"]}, {"input": [5.1, 3.8, 1.9, 0.4], "output": ["Iris-setosa"]}, {"input": [4.8, 3, 1.4, 0.3], "output": ["Iris-setosa"]}, {"input": [5.1, 3.8, 1.6, 0.2], "output": ["Iris-setosa"]}, {
+                            "input": [4.6, 3.2, 1.4, 0.2],
+                            "output": ["Iris-setosa"]
+                        }, {"input": [5.3, 3.7, 1.5, 0.2], "output": ["Iris-setosa"]}, {"input": [5, 3.3, 1.4, 0.2], "output": ["Iris-setosa"]}, {"input": [7, 3.2, 4.7, 1.4], "output": ["Iris-versicolor"]}, {"input": [6.4, 3.2, 4.5, 1.5], "output": ["Iris-versicolor"]}, {"input": [6.9, 3.1, 4.9, 1.5], "output": ["Iris-versicolor"]}, {"input": [5.5, 2.3, 4, 1.3], "output": ["Iris-versicolor"]}, {"input": [6.5, 2.8, 4.6, 1.5], "output": ["Iris-versicolor"]}, {
+                            "input": [5.7, 2.8, 4.5, 1.3],
+                            "output": ["Iris-versicolor"]
+                        }, {"input": [6.3, 3.3, 4.7, 1.6], "output": ["Iris-versicolor"]}, {"input": [4.9, 2.4, 3.3, 1], "output": ["Iris-versicolor"]}, {"input": [6.6, 2.9, 4.6, 1.3], "output": ["Iris-versicolor"]}, {"input": [5.2, 2.7, 3.9, 1.4], "output": ["Iris-versicolor"]}, {"input": [5, 2, 3.5, 1], "output": ["Iris-versicolor"]}, {"input": [5.9, 3, 4.2, 1.5], "output": ["Iris-versicolor"]}, {"input": [6, 2.2, 4, 1], "output": ["Iris-versicolor"]}, {
+                            "input": [6.1, 2.9, 4.7, 1.4],
+                            "output": ["Iris-versicolor"]
+                        }, {"input": [5.6, 2.9, 3.6, 1.3], "output": ["Iris-versicolor"]}, {"input": [6.7, 3.1, 4.4, 1.4], "output": ["Iris-versicolor"]}, {"input": [5.6, 3, 4.5, 1.5], "output": ["Iris-versicolor"]}, {"input": [5.8, 2.7, 4.1, 1], "output": ["Iris-versicolor"]}, {"input": [6.2, 2.2, 4.5, 1.5], "output": ["Iris-versicolor"]}, {"input": [5.6, 2.5, 3.9, 1.1], "output": ["Iris-versicolor"]}, {"input": [5.9, 3.2, 4.8, 1.8], "output": ["Iris-versicolor"]}, {
+                            "input": [6.1, 2.8, 4, 1.3],
+                            "output": ["Iris-versicolor"]
+                        }, {"input": [6.3, 2.5, 4.9, 1.5], "output": ["Iris-versicolor"]}, {"input": [6.1, 2.8, 4.7, 1.2], "output": ["Iris-versicolor"]}, {"input": [6.4, 2.9, 4.3, 1.3], "output": ["Iris-versicolor"]}, {"input": [6.6, 3, 4.4, 1.4], "output": ["Iris-versicolor"]}, {"input": [6.8, 2.8, 4.8, 1.4], "output": ["Iris-versicolor"]}, {"input": [6.7, 3, 5, 1.7], "output": ["Iris-versicolor"]}, {"input": [6, 2.9, 4.5, 1.5], "output": ["Iris-versicolor"]}, {
+                            "input": [5.7, 2.6, 3.5, 1],
+                            "output": ["Iris-versicolor"]
+                        }, {"input": [5.5, 2.4, 3.8, 1.1], "output": ["Iris-versicolor"]}, {"input": [5.5, 2.4, 3.7, 1], "output": ["Iris-versicolor"]}, {"input": [5.8, 2.7, 3.9, 1.2], "output": ["Iris-versicolor"]}, {"input": [6, 2.7, 5.1, 1.6], "output": ["Iris-versicolor"]}, {"input": [5.4, 3, 4.5, 1.5], "output": ["Iris-versicolor"]}, {"input": [6, 3.4, 4.5, 1.6], "output": ["Iris-versicolor"]}, {"input": [6.7, 3.1, 4.7, 1.5], "output": ["Iris-versicolor"]}, {
+                            "input": [6.3, 2.3, 4.4, 1.3],
+                            "output": ["Iris-versicolor"]
+                        }, {"input": [5.6, 3, 4.1, 1.3], "output": ["Iris-versicolor"]}, {"input": [5.5, 2.5, 4, 1.3], "output": ["Iris-versicolor"]}, {"input": [5.5, 2.6, 4.4, 1.2], "output": ["Iris-versicolor"]}, {"input": [6.1, 3, 4.6, 1.4], "output": ["Iris-versicolor"]}, {"input": [5.8, 2.6, 4, 1.2], "output": ["Iris-versicolor"]}, {"input": [5, 2.3, 3.3, 1], "output": ["Iris-versicolor"]}, {"input": [5.6, 2.7, 4.2, 1.3], "output": ["Iris-versicolor"]}, {
+                            "input": [5.7, 3, 4.2, 1.2],
+                            "output": ["Iris-versicolor"]
+                        }, {"input": [5.7, 2.9, 4.2, 1.3], "output": ["Iris-versicolor"]}, {"input": [6.2, 2.9, 4.3, 1.3], "output": ["Iris-versicolor"]}, {"input": [5.1, 2.5, 3, 1.1], "output": ["Iris-versicolor"]}, {"input": [5.7, 2.8, 4.1, 1.3], "output": ["Iris-versicolor"]}, {"input": [6.3, 3.3, 6, 2.5], "output": ["Iris-virginica"]}, {"input": [5.8, 2.7, 5.1, 1.9], "output": ["Iris-virginica"]}, {"input": [7.1, 3, 5.9, 2.1], "output": ["Iris-virginica"]}, {
+                            "input": [6.3, 2.9, 5.6, 1.8],
+                            "output": ["Iris-virginica"]
+                        }, {"input": [6.5, 3, 5.8, 2.2], "output": ["Iris-virginica"]}, {"input": [7.6, 3, 6.6, 2.1], "output": ["Iris-virginica"]}, {"input": [4.9, 2.5, 4.5, 1.7], "output": ["Iris-virginica"]}, {"input": [7.3, 2.9, 6.3, 1.8], "output": ["Iris-virginica"]}, {"input": [6.7, 2.5, 5.8, 1.8], "output": ["Iris-virginica"]}, {"input": [7.2, 3.6, 6.1, 2.5], "output": ["Iris-virginica"]}, {"input": [6.5, 3.2, 5.1, 2], "output": ["Iris-virginica"]}, {
+                            "input": [6.4, 2.7, 5.3, 1.9],
+                            "output": ["Iris-virginica"]
+                        }, {"input": [6.8, 3, 5.5, 2.1], "output": ["Iris-virginica"]}, {"input": [5.7, 2.5, 5, 2], "output": ["Iris-virginica"]}, {"input": [5.8, 2.8, 5.1, 2.4], "output": ["Iris-virginica"]}, {"input": [6.4, 3.2, 5.3, 2.3], "output": ["Iris-virginica"]}, {"input": [6.5, 3, 5.5, 1.8], "output": ["Iris-virginica"]}, {"input": [7.7, 3.8, 6.7, 2.2], "output": ["Iris-virginica"]}, {"input": [7.7, 2.6, 6.9, 2.3], "output": ["Iris-virginica"]}, {
+                            "input": [6, 2.2, 5, 1.5],
+                            "output": ["Iris-virginica"]
+                        }, {"input": [6.9, 3.2, 5.7, 2.3], "output": ["Iris-virginica"]}, {"input": [5.6, 2.8, 4.9, 2], "output": ["Iris-virginica"]}, {"input": [7.7, 2.8, 6.7, 2], "output": ["Iris-virginica"]}, {"input": [6.3, 2.7, 4.9, 1.8], "output": ["Iris-virginica"]}, {"input": [6.7, 3.3, 5.7, 2.1], "output": ["Iris-virginica"]}, {"input": [7.2, 3.2, 6, 1.8], "output": ["Iris-virginica"]}, {"input": [6.2, 2.8, 4.8, 1.8], "output": ["Iris-virginica"]}, {
+                            "input": [6.1, 3, 4.9, 1.8],
+                            "output": ["Iris-virginica"]
+                        }, {"input": [6.4, 2.8, 5.6, 2.1], "output": ["Iris-virginica"]}, {"input": [7.2, 3, 5.8, 1.6], "output": ["Iris-virginica"]}, {"input": [7.4, 2.8, 6.1, 1.9], "output": ["Iris-virginica"]}, {"input": [7.9, 3.8, 6.4, 2], "output": ["Iris-virginica"]}, {"input": [6.4, 2.8, 5.6, 2.2], "output": ["Iris-virginica"]}, {"input": [6.3, 2.8, 5.1, 1.5], "output": ["Iris-virginica"]}, {"input": [6.1, 2.6, 5.6, 1.4], "output": ["Iris-virginica"]}, {
+                            "input": [7.7, 3, 6.1, 2.3],
+                            "output": ["Iris-virginica"]
+                        }, {"input": [6.3, 3.4, 5.6, 2.4], "output": ["Iris-virginica"]}, {"input": [6.4, 3.1, 5.5, 1.8], "output": ["Iris-virginica"]}, {"input": [6, 3, 4.8, 1.8], "output": ["Iris-virginica"]}, {"input": [6.9, 3.1, 5.4, 2.1], "output": ["Iris-virginica"]}, {"input": [6.7, 3.1, 5.6, 2.4], "output": ["Iris-virginica"]}, {"input": [6.9, 3.1, 5.1, 2.3], "output": ["Iris-virginica"]}, {"input": [5.8, 2.7, 5.1, 1.9], "output": ["Iris-virginica"]}, {
+                            "input": [6.8, 3.2, 5.9, 2.3],
+                            "output": ["Iris-virginica"]
+                        }, {"input": [6.7, 3.3, 5.7, 2.5], "output": ["Iris-virginica"]}, {"input": [6.7, 3, 5.2, 2.3], "output": ["Iris-virginica"]}, {"input": [6.3, 2.5, 5, 1.9], "output": ["Iris-virginica"]}, {"input": [6.5, 3, 5.2, 2], "output": ["Iris-virginica"]}, {"input": [6.2, 3.4, 5.4, 2.3], "output": ["Iris-virginica"]}, {"input": [5.9, 3, 5.1, 1.8], "output": ["Iris-virginica"]}],
+                        "graphRaw": {
+                            "nodes": [{"id": "input-0", "label": "Vstup 1", "fixed": true, "x": -450, "y": 0, "color": "#8cffaa"}, {"id": "input-1", "label": "Vstup 2", "fixed": true, "x": -450, "y": 100, "color": "#8cffaa"}, {"id": "input-2", "label": "Vstup 3", "fixed": true, "x": -450, "y": 200, "color": "#8cffaa"}, {"id": "input-3", "label": "Vstup 4", "fixed": true, "x": -450, "y": 300, "color": "#8cffaa"}, {
+                                "id": "output-0",
+                                "label": "Výstup 1",
+                                "fixed": true,
+                                "x": 450,
+                                "y": 0,
+                                "color": "#ff5b63"
+                            }, {"id": "output-1", "label": "Výstup 2", "fixed": true, "x": 450, "y": 100, "color": "#ff5b63"}, {"id": "output-2", "label": "Výstup 3", "fixed": true, "x": 450, "y": 200, "color": "#ff5b63"}, {"id": "hidden-0-0", "label": ""}, {"id": "hidden-0-1", "label": ""}, {"id": "hidden-0-2", "label": ""}],
+                            "edges": [{"from": "input-0", "to": "hidden-0-0", "id": "ka3lK", "arrows": "to"}, {"from": "input-1", "to": "hidden-0-0", "id": "Bey1w", "arrows": "to"}, {"from": "input-2", "to": "hidden-0-0", "id": "40aBx", "arrows": "to"}, {"from": "input-3", "to": "hidden-0-0", "id": "zJn4z", "arrows": "to"}, {"from": "hidden-0-0", "to": "output-0", "id": "GZfDb", "arrows": "to"}, {"from": "hidden-0-0", "to": "output-1", "id": "jYIaO", "arrows": "to"}, {
+                                "from": "hidden-0-0",
+                                "to": "output-2",
+                                "id": "O914G",
+                                "arrows": "to"
+                            }, {"from": "input-0", "to": "hidden-0-1", "id": "JF7IA", "arrows": "to"}, {"from": "input-1", "to": "hidden-0-1", "id": "cV8Ug", "arrows": "to"}, {"from": "input-2", "to": "hidden-0-1", "id": "G4p63", "arrows": "to"}, {"from": "input-3", "to": "hidden-0-1", "id": "nfJtl", "arrows": "to"}, {"from": "hidden-0-1", "to": "output-0", "id": "AS2St", "arrows": "to"}, {"from": "hidden-0-1", "to": "output-1", "id": "kA07g", "arrows": "to"}, {
+                                "from": "hidden-0-1",
+                                "to": "output-2",
+                                "id": "qvgHL",
+                                "arrows": "to"
+                            }, {"from": "input-0", "to": "hidden-0-2", "id": "Ib3xD", "arrows": "to"}, {"from": "input-1", "to": "hidden-0-2", "id": "bb15O", "arrows": "to"}, {"from": "input-2", "to": "hidden-0-2", "id": "ut0Nv", "arrows": "to"}, {"from": "input-3", "to": "hidden-0-2", "id": "a6SCm", "arrows": "to"}, {"from": "hidden-0-2", "to": "output-0", "id": "npExM", "arrows": "to"}, {"from": "hidden-0-2", "to": "output-1", "id": "hFUbP", "arrows": "to"}, {
+                                "from": "hidden-0-2",
+                                "to": "output-2",
+                                "id": "O6Pos",
+                                "arrows": "to"
+                            }]
+                        }
+                    }
+                },
+                outputType: 'number',
+                normalizer: new Normalizer(this.metadata),
+                getColor: getColor
             }
         },
         watch: {
@@ -207,6 +587,23 @@
                             data.output.push("");
                         }
                     }
+                },
+                deep: true
+            },
+            data: {
+                handler() {
+                    let type = this.metadata.output[0].type;
+                    if (this.outputType !== type) {
+                        switch (type) {
+                            case 'number':
+                                this.imageSelectOutput = 0;
+                                break;
+                            case 'string':
+                                this.imageSelectOutput = Object.keys(this.metadata.output[0].binarized)[0];
+                                break;
+                        }
+                    }
+                    this.outputType = type;
                 },
                 deep: true
             }
@@ -237,13 +634,17 @@
             },
             addPoint(e) {
                 let imageSelect = this.$refs.imageSelect;
+                let output = parseFloat(this.imageSelectOutput);
+                if (isNaN(output)) {
+                    output = this.imageSelectOutput;
+                }
                 this.data.push({
                     input: [
-                        e.offsetX / imageSelect.clientWidth,
-                        e.offsetY / imageSelect.clientHeight
+                        parseFloat(e.offsetX / imageSelect.clientWidth),
+                        parseFloat(e.offsetY / imageSelect.clientHeight)
                     ],
                     output: [
-                        this.imageSelectOutput
+                        output
                     ]
                 });
             },
@@ -253,10 +654,10 @@
             fileUpload(data) {
                 this.$emit('load', data)
             },
-            loadDummy(type){
+            loadDummy(type) {
                 this.$emit('load-dummy', this.dummyData[type])
             },
-            fileUploadCsv(data){
+            fileUploadCsv(data) {
                 this.csv.fileData = data;
             }
         }
@@ -264,6 +665,11 @@
 </script>
 
 <style lang="scss">
+    .custom-data-wrap {
+        max-height: 800px;
+        overflow: auto;
+    }
+
     .table-data {
         input {
             width: 50%;

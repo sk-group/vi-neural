@@ -50,74 +50,90 @@
             <button class="btn btn-primary" @click="learn">Učit</button>
             <button class="btn btn-danger" @click="stop = true">Stop</button>
         </div>
-        <div v-if="normalizedInputs == 2 && normalizedOutputs == 1" class="canvas-container">
-            <div class="form-check show-data">
-                <input class="form-check-input" type="checkbox" v-model="showData" id="showData">
-                <label class="form-check-label" for="showData">
-                    Zobrazit data
-                </label>
+        <div v-if="normalizedInputs == 2 && (normalizedOutputs == 1 || (configuration.outputs == 1 && metadata.output[0].type == 'string'))" class="canvas-container">
+            <div class="checkboxes">
+                <div class="form-check show-lines">
+                    <input class="form-check-input" type="checkbox" v-model="showLines" id="showLines">
+                    <label class="form-check-label" for="showLines">
+                        Zobrazit přímky neuronů první skryté vrstvy
+                    </label>
+                </div>
+                <div class="form-check show-data">
+                    <input class="form-check-input" type="checkbox" v-model="showData" id="showData">
+                    <label class="form-check-label" for="showData">
+                        Zobrazit data
+                    </label>
+                </div>
             </div>
             <canvas width="1000" height="800" ref="canvas"></canvas>
             <div class="image-data-container">
-                <Axis :min="xMin" :max="xMax" white="true"/>
-                <Axis vertical="true" :min="yMin" :max="yMax" white="true"/>
+                <Axis :min="normalizer.getXMin()" :max="normalizer.getXMax()" white="true"/>
+                <Axis vertical="true" :min="normalizer.getYMin()" :max="normalizer.getYMax()" white="true"/>
                 <div class="image-data" ref="imageData">
                     <div v-if="showData">
-                        <span v-for="data in this.data" class="point" :style="{
-                            left: data.input[0] * 100 + '%',
-                            top: data.input[1] * 100 +'%',
-                            backgroundColor: 'rgba(' + Math.round(255 * data.output[0]) + ',' + Math.round(255 * data.output[0]) + ',' + Math.round(255 * data.output[0]) + ',1)' }"
+                        <span v-for="i in data.length" class="point"
+                              :title="originalData[i - 1].input[0].toFixed(2) + ', ' + originalData[i - 1].input[1].toFixed(2) + ' => ' + originalData[i - 1].output"
+                              :style="{
+                                  left: data[i - 1].input[0] * 100 + '%',
+                                  top: data[i - 1].input[1] * 100 +'%',
+                                  backgroundColor: getColor(data[i - 1].output)
+                              }"
                         />
                     </div>
                 </div>
-                <Axis bottom="true" :min="xMin" :max="xMax" white="true"/>
-                <Axis vertical="true" bottom="true" :min="yMin" :max="yMax" white="true"/>
+                <Axis bottom="true" :min="normalizer.getXMin()" :max="normalizer.getXMax()" white="true"/>
+                <Axis vertical="true" bottom="true" :min="normalizer.getYMin()" :max="normalizer.getYMax()" white="true"/>
             </div>
         </div>
-        <div v-else v-for="result in results">
-            <table class="result-table">
-                <tr>
-                    <td v-for="j in result.input.length">
+        <div v-else class="results-wrap">
+            <div v-for="result in results">
+                <table class="result-table">
+                    <tr>
+                        <td v-for="j in result.input.length">
                         <span v-if="typeof(result.input[j - 1]) === 'number'">
                             {{ result.input[j - 1].toFixed(5) }}
                         </span>
-                        <span v-else>
+                            <span v-else>
                             {{ result.input[j - 1] }}
                         </span>
 
-                    </td>
-                    <td> => </td>
-                    <td v-for="j in result.output.length">
+                        </td>
+                        <td> => </td>
+                        <td v-for="j in result.output.length">
                         <span v-if="typeof(result.output[j - 1]) === 'number'">
                             {{ result.output[j - 1].toFixed(5) }}
                         </span>
-                        <span v-else>
+                            <span v-else>
                             {{ result.output[j - 1] }}
                         </span>
-                    </td>
-                </tr>
-            </table>
+                        </td>
+                    </tr>
+                </table>
+            </div>
         </div>
-        <p>Iterace: {{ iteration }}</p>
-        <p>Průměrná chyba: {{ error }}</p>
-        <h1>Otestovat síť</h1>
-        <div>
-            <table class="mb">
-                <td v-for="j in configuration.inputs">
-                    <input v-model.number="testInput[j - 1]" class="form-control"/>
-                </td>
-            </table>
-            <button @click="test" class="btn btn-primary mb">Test</button>
-            <p>
-                <span v-for="output in testOutput">
-                    <span v-if="typeof(output) === 'number'">
-                        {{ output.toFixed(5) }}
+        <div v-if="this.network">
+            <p>Iterace: {{ iteration }}</p>
+            <p>Průměrná chyba: {{ error }}</p>
+            <h1>Otestovat síť</h1>
+            <div>
+                <table class="mb">
+                    <td v-for="j in configuration.inputs">
+                        <label>{{ j }}. vstup</label>
+                        <input v-model.number="testInput[j - 1]" class="form-control"/>
+                    </td>
+                </table>
+                <button @click="test" class="btn btn-primary mb">Test</button>
+                <p>
+                    <span v-for="output in testOutput">
+                        <span v-if="typeof(output) === 'number'">
+                            {{ output.toFixed(5) }}
+                        </span>
+                        <span v-else>
+                            {{ output }}
+                        </span>
                     </span>
-                    <span v-else>
-                        {{ output }}
-                </span>
-            </span>
-            </p>
+                </p>
+            </div>
         </div>
     </div>
 </template>
@@ -126,12 +142,13 @@
     // TODO: make reposnsive, at least for tablet
     import Axis from './Axis.vue';
     import Normalizer from '../lib/Normalizer';
+    import getColor from '../lib/ColorHelpers';
 
     let synaptic = require('synaptic');
 
     export default {
         name: "Result",
-        props: ['configuration', 'data', 'networkDesign', 'metadata', 'normalizedInputs', 'normalizedOutputs'],
+        props: ['configuration', 'data', 'originalData', 'networkDesign', 'metadata', 'normalizedInputs', 'normalizedOutputs'],
         components: {
             Axis
         },
@@ -147,37 +164,10 @@
                 costFunctions: synaptic.Trainer.cost,
                 error: 1,
                 showData: true,
-                inputConnectedNeurons: []
-            }
-        },
-        computed: {
-            xMin() {
-                let xMin = 0;
-                if (this.metadata && this.metadata.input[0]) {
-                    return this.metadata.input[0].min;
-                }
-                return xMin;
-            },
-            xMax() {
-                let xMax = 1;
-                if (this.metadata && this.metadata.input[0]) {
-                    return this.metadata.input[0].max
-                }
-                return xMax;
-            },
-            yMin() {
-                let yMin = 0;
-                if (this.metadata && this.metadata.input[1]) {
-                    return this.metadata.output[0].min;
-                }
-                return yMin;
-            },
-            yMax() {
-                let yMax = 1;
-                if (this.metadata && this.metadata.input[1]) {
-                    return this.metadata.output[0].max;
-                }
-                return yMax;
+                showLines: true,
+                inputConnectedNeurons: [],
+                normalizer: new Normalizer(this.metadata),
+                getColor: getColor
             }
         },
         mounted() {
@@ -190,11 +180,9 @@
         },
         methods: {
             test() {
-                let normalizer = new Normalizer();
-                normalizer.setMetadata(this.metadata);
-                let normalizedInput = normalizer.normalizeInput(this.testInput);
+                let normalizedInput = this.normalizer.normalizeInput(this.testInput);
                 let output = this.network.activate(normalizedInput);
-                this.testOutput = normalizer.deNormalizeOutput(output);
+                this.testOutput = this.normalizer.deNormalizeOutput(output);
             },
             createNetwork() {
                 let neurons = [];
@@ -247,7 +235,7 @@
                         let isInputNeuron = inputLayer.list.indexOf(neuron) !== -1;
                         for (let neighbor of neighbors) {
                             if (searchedNeuronsIds.indexOf(neighbor.nodeId) === -1 && !neighbor.nodeId.startsWith('output')) {
-                                if(isInputNeuron) {
+                                if (isInputNeuron) {
                                     // neighbor is connected to input
                                     this.inputConnectedNeurons.push(neighbor);
                                 }
@@ -291,7 +279,7 @@
                         }
                     }
                 };
-                if (this.normalizedInputs == 2 && this.normalizedOutputs == 1) {
+                if (this.normalizedInputs == 2 && (this.normalizedOutputs == 1 || (this.configuration.outputs == 1 && this.metadata.output[0].type == 'string'))) {
                     // run animation
                     let canvas = this.$refs.canvas;
                     let res = 5;
@@ -309,33 +297,36 @@
                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                         for (let x = 0; x <= width; x += res) {
                             for (let y = 0; y <= height; y += res) {
-                                let alpha = this.network.activate([x / width, y / height]);
-                                ctx.fillStyle = 'rgba(255, 255, 255, ' + alpha[0] + ')';
+                                let output = this.network.activate([x / width, y / height]);
+                                ctx.fillStyle = this.getColor(output);
                                 ctx.fillRect(x + xOffset, y + yOffset, res, res);
                             }
                         }
-                        // line function
-                        let line = (x1, neuron) => {
-                            let w = [];
-                            for (let i in neuron.connections.inputs) {
-                                if (!neuron.connections.inputs.hasOwnProperty(i)) {
-                                    continue;
-                                }
-                                w.push(neuron.connections.inputs[i].weight);
-                            }
-                            return -w[0] / w[1] * x1 - neuron.bias / w[1];
-                        };
                         // draw lines
-                        this.network.restore();
-                        for (let neuron of this.inputConnectedNeurons) {
-                            ctx.strokeStyle = 'dodgerblue';
-                            ctx.lineWidth = 2;
-                            ctx.beginPath();
-                            let lineY1 = line(lineX1, neuron);
-                            ctx.moveTo(0, lineY1 * height + yOffset);
-                            let lineY2 = line(lineX2, neuron);
-                            ctx.lineTo(canvas.width, lineY2 * height + yOffset);
-                            ctx.stroke();
+                        if(this.showLines) {
+                            // line function
+                            this.network.restore();
+                            let line = (x1, neuron) => {
+                                let w = [];
+                                for (let i in neuron.connections.inputs) {
+                                    if (!neuron.connections.inputs.hasOwnProperty(i)) {
+                                        continue;
+                                    }
+                                    w.push(neuron.connections.inputs[i].weight);
+                                }
+                                return -w[0] / w[1] * x1 - neuron.bias / w[1];
+                            };
+                            // draw
+                            for (let neuron of this.inputConnectedNeurons) {
+                                ctx.strokeStyle = 'dodgerblue';
+                                ctx.lineWidth = 2;
+                                ctx.beginPath();
+                                let lineY1 = line(lineX1, neuron);
+                                ctx.moveTo(0, lineY1 * height + yOffset);
+                                let lineY2 = line(lineX2, neuron);
+                                ctx.lineTo(canvas.width, lineY2 * height + yOffset);
+                                ctx.stroke();
+                            }
                         }
                         if (!this.stop) {
                             requestAnimationFrame(draw);
@@ -346,11 +337,11 @@
                     let showResults = () => {
                         iterate();
                         this.results = [];
-                        for (let data of this.data) {
-                            let input = data.input;
+                        for (let i = 0; i < this.data.length; i++) {
+                            let output = this.network.activate(this.data[i].input);
                             this.results.push({
-                                input: input,
-                                output: this.network.activate(input)
+                                input: this.originalData[i].input,
+                                output: this.normalizer.deNormalizeOutput(output)
                             });
                         }
                         if (!this.stop) {
@@ -372,10 +363,17 @@
             transform: scaleY(-1);
         }
 
-        .show-data {
+        .checkboxes .form-check {
             position: absolute;
-            right: 0;
             bottom: calc(100% + 10px);
+        }
+
+        .show-data {
+            right: 0;
+        }
+
+        .show-linex {
+            left: 0;
         }
 
         .image-data-container {
@@ -407,10 +405,18 @@
         }
     }
 
+    .results-wrap {
+        display: inline-block;
+        margin: 0 auto;
+        max-height: 400px;
+        overflow: auto;
+    }
+
     .result-table {
         td {
-            width: 70px;
-            text-align: center;
+            text-align: left;
+            width: 100px;
+            white-space: nowrap;
         }
     }
 </style>
