@@ -170,6 +170,11 @@
                 getColor: getColor
             }
         },
+        watch: {
+            showLines() {
+                this.drawOutput();
+            }
+        },
         mounted() {
             let canvas = this.$refs.canvas;
             if (canvas) {
@@ -256,6 +261,55 @@
                     output: outputLayer
                 });
             },
+            drawOutput() {
+                if(this.network) {
+                    let canvas = this.$refs.canvas;
+                    let res = 5;
+                    let ctx = canvas.getContext("2d");
+                    let width = this.$refs.imageData.clientWidth;
+                    let height = this.$refs.imageData.clientHeight;
+                    let xOffset = (canvas.width - width) / 2;
+                    let yOffset = (canvas.height - height) / 2;
+                    let lineX1 = -width / canvas.width;
+                    let lineX2 = 1 + width / canvas.width;
+                    // draw network outputs
+                    ctx.fillStyle = "black";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    for (let x = 0; x <= width; x += res) {
+                        for (let y = 0; y <= height; y += res) {
+                            let output = this.network.activate([x / width, y / height]);
+                            ctx.fillStyle = this.getColor(output);
+                            ctx.fillRect(x + xOffset, y + yOffset, res, res);
+                        }
+                    }
+                    // draw lines
+                    if (this.showLines) {
+                        // line function
+                        this.network.restore();
+                        let line = (x1, neuron) => {
+                            let w = [];
+                            for (let i in neuron.connections.inputs) {
+                                if (!neuron.connections.inputs.hasOwnProperty(i)) {
+                                    continue;
+                                }
+                                w.push(neuron.connections.inputs[i].weight);
+                            }
+                            return -w[0] / w[1] * x1 - neuron.bias / w[1];
+                        };
+                        // draw
+                        for (let neuron of this.inputConnectedNeurons) {
+                            ctx.strokeStyle = 'dodgerblue';
+                            ctx.lineWidth = 2;
+                            ctx.beginPath();
+                            let lineY1 = line(lineX1, neuron);
+                            ctx.moveTo(0, lineY1 * height + yOffset);
+                            let lineY2 = line(lineX2, neuron);
+                            ctx.lineTo(canvas.width, lineY2 * height + yOffset);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            },
             learn() {
                 this.stop = false;
                 this.error = 0;
@@ -281,53 +335,9 @@
                 };
                 if (this.normalizedInputs == 2 && (this.normalizedOutputs == 1 || (this.configuration.outputs == 1 && this.metadata.output[0].type == 'string'))) {
                     // run animation
-                    let canvas = this.$refs.canvas;
-                    let res = 5;
-                    let ctx = canvas.getContext("2d");
-                    let width = this.$refs.imageData.clientWidth;
-                    let height = this.$refs.imageData.clientHeight;
-                    let xOffset = (canvas.width - width) / 2;
-                    let yOffset = (canvas.height - height) / 2;
-                    let lineX1 = -width / canvas.width;
-                    let lineX2 = 1 + width / canvas.width;
                     let draw = () => {
                         iterate();
-                        // draw network outputs
-                        ctx.fillStyle = "black";
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        for (let x = 0; x <= width; x += res) {
-                            for (let y = 0; y <= height; y += res) {
-                                let output = this.network.activate([x / width, y / height]);
-                                ctx.fillStyle = this.getColor(output);
-                                ctx.fillRect(x + xOffset, y + yOffset, res, res);
-                            }
-                        }
-                        // draw lines
-                        if(this.showLines) {
-                            // line function
-                            this.network.restore();
-                            let line = (x1, neuron) => {
-                                let w = [];
-                                for (let i in neuron.connections.inputs) {
-                                    if (!neuron.connections.inputs.hasOwnProperty(i)) {
-                                        continue;
-                                    }
-                                    w.push(neuron.connections.inputs[i].weight);
-                                }
-                                return -w[0] / w[1] * x1 - neuron.bias / w[1];
-                            };
-                            // draw
-                            for (let neuron of this.inputConnectedNeurons) {
-                                ctx.strokeStyle = 'dodgerblue';
-                                ctx.lineWidth = 2;
-                                ctx.beginPath();
-                                let lineY1 = line(lineX1, neuron);
-                                ctx.moveTo(0, lineY1 * height + yOffset);
-                                let lineY2 = line(lineX2, neuron);
-                                ctx.lineTo(canvas.width, lineY2 * height + yOffset);
-                                ctx.stroke();
-                            }
-                        }
+                        this.drawOutput();
                         if (!this.stop) {
                             requestAnimationFrame(draw);
                         }

@@ -16,12 +16,6 @@
                     <span class="btn btn-success" @click="addHiddenLayer">+</span>
                 </div>
             </div>
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" v-model="configuration.hopfield" id="hopfield">
-                <label class="form-check-label" for="hopfield">
-                    Hopfield
-                </label>
-            </div>
         </div>
         <div class="text-center mb-3">
             <span
@@ -133,19 +127,6 @@
                                 id: nodeId,
                                 label: "",
                             });
-
-                            if(this.configuration.hopfield) {
-                                for(let j = 0; j < this.configuration.hiddenLayers[it].count; j++) {
-                                    if(y != j) {
-                                        this.dataGlobal.edges.push({
-                                            from: nodeId,
-                                            to: "hidden-" + it + "-" + j,
-                                            id: getUid(),
-                                            arrows: "to"
-                                        });
-                                    }
-                                }
-                            }
 
                             if (it == 0) {
                                 for (let itInput = 0; itInput < this.inputs; itInput++) {
