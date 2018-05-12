@@ -44,7 +44,7 @@
             </div>
         </div>
         <div class="mb">
-            <span class="btn btn-primary" @click="$emit('save')">Uložit síť s konfigurací</span>
+            <span class="btn btn-primary" @click="$emit('save')">Uložit konfiguraci</span>
         </div>
         <div class="mb">
             <button class="btn btn-primary" @click="learn">Učit</button>
@@ -139,7 +139,10 @@
 </template>
 
 <script>
-    // TODO: make reposnsive, at least for tablet
+    /**
+     * Show the network learning result
+     */
+
     import Axis from './Axis.vue';
     import Normalizer from '../lib/Normalizer';
     import getColor from '../lib/ColorHelpers';
@@ -171,11 +174,15 @@
             }
         },
         watch: {
+            /**
+             * On show neuron lines checkbox change, reload the canvas
+             */
             showLines() {
                 this.drawOutput();
             }
         },
         mounted() {
+            // fill canvas with black color
             let canvas = this.$refs.canvas;
             if (canvas) {
                 let ctx = canvas.getContext("2d");
@@ -184,16 +191,23 @@
             }
         },
         methods: {
+            /**
+             * Test the network - take test inputs, normalize it, active the network and denormalize the output (using metadata)
+             */
             test() {
                 let normalizedInput = this.normalizer.normalizeInput(this.testInput);
                 let output = this.network.activate(normalizedInput);
                 this.testOutput = this.normalizer.deNormalizeOutput(output);
             },
+            /**
+             * Creates the Synaptic network from the graph data from NetworkDesign step
+             */
             createNetwork() {
                 let neurons = [];
                 let inputLayer = new synaptic.Layer();
                 let hiddenLayers = [];
                 let outputLayer = new synaptic.Layer();
+                // Create neurons
                 for (let node of this.networkDesign.nodes) {
                     let neuron = new synaptic.Neuron();
                     neuron.nodeId = node.id;
@@ -207,6 +221,9 @@
                     }
                 }
 
+                /**
+                 * Get neighbors of neuron (from graph)
+                 */
                 let findNeighbors = (neuron) => {
                     let nodeIds = this.networkDesign.getNodeOuts(neuron.nodeId);
                     return neurons.filter((neuron) => {
@@ -214,24 +231,12 @@
                     });
                 };
 
-                /*let projectNeurons = (source) => {
-                    let neighbors = findNeighbors(neighbor);
-                    for (let neighbor of neighbors) {
-                        if (!source.connected(neighbor)) {
-                            // connection doesn't exist yet
-                            source.project(neighbor);
-                            projectNeurons(neighbor)
-                        }
-                    }
-                };*/
-
                 let queue = [];
                 let searchedNeuronsIds = [];
                 this.inputConnectedNeurons = [];
 
-                // BFS
+                // perform BFS algorithm to create layers
                 for (let inputNeuron of inputLayer.list) {
-                    //projectNeurons(inputNeuron); //DFS
                     queue.push(inputNeuron);
                     while (queue.length !== 0) {
                         let neuron = queue.shift();
@@ -255,6 +260,7 @@
                         }
                     }
                 }
+                // create network
                 this.network = new synaptic.Network({
                     input: inputLayer,
                     hidden: hiddenLayers,
@@ -272,7 +278,7 @@
                     let yOffset = (canvas.height - height) / 2;
                     let lineX1 = -width / canvas.width;
                     let lineX2 = 1 + width / canvas.width;
-                    // draw network outputs
+                    // draw network output
                     ctx.fillStyle = "black";
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                     for (let x = 0; x <= width; x += res) {
@@ -296,7 +302,7 @@
                             }
                             return -w[0] / w[1] * x1 - neuron.bias / w[1];
                         };
-                        // draw
+                        // draw lines of neurons in first hidden layer
                         for (let neuron of this.inputConnectedNeurons) {
                             ctx.strokeStyle = 'dodgerblue';
                             ctx.lineWidth = 2;
@@ -310,12 +316,19 @@
                     }
                 }
             },
+            /**
+             * Learn the network
+             */
             learn() {
                 this.stop = false;
                 this.error = 0;
+                // create the network first
                 this.createNetwork();
 
                 this.iteration = 0;
+                /**
+                 * Run iterations (according to the speed configuration)
+                 */
                 let iterate = () => {
                     for (let i = 0; i < this.configuration.speed; i++) {
                         let errorSum = 0;
@@ -334,7 +347,9 @@
                     }
                 };
                 if (this.normalizedInputs == 2 && (this.normalizedOutputs == 1 || (this.configuration.outputs == 1 && this.metadata.output[0].type == 'string'))) {
-                    // run animation
+                    /**
+                     * Draw canvas animation
+                     */
                     let draw = () => {
                         iterate();
                         this.drawOutput();
@@ -344,6 +359,9 @@
                     };
                     requestAnimationFrame(draw);
                 } else {
+                    /**
+                     * Show result for each data row
+                     */
                     let showResults = () => {
                         iterate();
                         this.results = [];

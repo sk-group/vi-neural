@@ -40,6 +40,10 @@
 </template>
 
 <script>
+    /**
+     * Parent of all three sections (steps), contains variable which should be visible in all sections and changes the current section of this application
+     */
+
     import Progress from '../components/Progress.vue';
     import InputData from '../components/InputData.vue';
     import NetworkDesign from '../components/NetworkDesign.vue';
@@ -62,6 +66,9 @@
         },
         watch: {
             data: {
+                /**
+                 * When user changes the data in input, normalize them
+                 */
                 handler() {
                     this.normalizeData();
                 },
@@ -69,6 +76,9 @@
             }
         },
         computed: {
+            /**
+             * Returns number of inputs after data normalization
+             */
             normalizedInputs() {
                 let normalizedInputs = this.normalizer.getInputCount();
                 if (normalizedInputs === 0) {
@@ -76,6 +86,9 @@
                 }
                 return normalizedInputs;
             },
+            /**
+             * Returns number of outputs after data normalization
+             */
             normalizedOutputs() {
                 let normalizedOutputs = this.normalizer.getOutputCount();
                 if (normalizedOutputs === 0) {
@@ -83,15 +96,24 @@
                 }
                 return this.normalizer.getOutputCount();
             },
+            /**
+             * Returns normalized data
+             */
             normalizedData() {
                 return this.normalizer.getNormalizedData();
             },
+            /**
+             * Returns metadata of normalized data, so we can then denormalize them
+             */
             metadata() {
                 return this.normalizer.getMetadata();
             }
         },
         data() {
             return {
+                /**
+                 * Designed neural network
+                 */
                 graphRaw: {
                     nodes: [],
                     edges: []
@@ -152,6 +174,9 @@
             }
         },
         methods: {
+            /**
+             * Changes sections
+             */
             show(sectionName = '') {
                 for (let section in this.appFlow) {
                     if (!this.appFlow.hasOwnProperty(section))
@@ -177,6 +202,9 @@
                         break;
                 }
             },
+            /**
+             * Disable on of the sections
+             */
             setDisabledProgress() {
                 let findActive = false;
                 for (let section in this.appFlow) {
@@ -192,9 +220,15 @@
                     }
                 }
             },
+            /**
+             * True, if section is visible, or environment is set to development (so we can see all sections at once)
+             */
             isVisible(name) {
                 return this.appFlow[name].active || process.env.NODE_ENV === 'development';
             },
+            /**
+             * Event to be called on network design change - creates the graph
+             */
             networkDesignChange(data) {
                 this.graphRaw.edges = data.edges;
                 this.graphRaw.nodes = data.nodes;
@@ -203,10 +237,16 @@
                 this.networkDesign.setEdges(data.edges);
                 this.networkDesign.setNodes(data.nodes);
             },
+            /**
+             * Normalized data using this.normalizer (lib/Normalizer.js)
+             */
             normalizeData() {
                 this.normalizer.setData(this.data);
                 this.normalizer.normalize();
             },
+            /**
+             * Loads content of file
+             */
             loadFromFile(data) {
                 let fr = new FileReader();
                 fr.onload = (data) => {
@@ -220,6 +260,9 @@
                 };
                 fr.readAsText(data.target.files[0]);
             },
+            /**
+             * Loads configuration from file
+             */
             loadConfig(parsedData) {
                 if (parsedData.configuration !== undefined && parsedData.data !== undefined && parsedData.graphRaw !== undefined) {
                     this.configuration = parsedData.configuration;
@@ -229,6 +272,9 @@
                     throw "error";
                 }
             },
+            /**
+             * Loads content of csv file
+             */
             loadFromFileCsv(data) {
                 let fr = new FileReader();
                 fr.onload = (dataLoad) => {
@@ -245,6 +291,7 @@
                         let output = [];
 
                         for (let inputCol of inputCols) {
+                            // inputs
                             if (!isNaN(inputCol)) {
                                 let parsed = parseFloat(line[inputCol]);
                                 if(typeof line[inputCol] !== 'undefined') {
@@ -257,6 +304,7 @@
                             }
                         }
                         for (let outputCol of outputCols) {
+                            // outputs
                             if (!isNaN(outputCol)) {
                                 let parsed = parseFloat(line[outputCol]);
                                 if(typeof line[outputCol] !== 'undefined') {
@@ -269,6 +317,7 @@
                             }
                         }
                         if(input.length > 0 && output.length > 0) {
+                            // gets the row only if it's not corrupted
                             this.data.push({
                                 input: input,
                                 output: output
@@ -283,6 +332,9 @@
                 };
                 fr.readAsText(data.fileData.target.files[0]);
             },
+            /**
+             * parses csv file
+             */
             processCsvData(allText, settings) {
                 let allTextLines = allText.match(/[^\r\n]+/g);
                 let lines = [];
@@ -297,6 +349,9 @@
                 }
                 return lines;
             },
+            /**
+             * Saves configuration file
+             */
             saveFile() {
                 let epoch = new Date().getTime();
                 let data = {

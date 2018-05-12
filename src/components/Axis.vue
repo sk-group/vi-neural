@@ -13,6 +13,10 @@
 </template>
 
 <script>
+    /**
+     * Creates the 2D image axis
+     */
+
     export default {
         props: ['vertical', 'size', 'white', 'bottom', 'min', 'max'],
         mounted() {

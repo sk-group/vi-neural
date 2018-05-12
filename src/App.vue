@@ -12,7 +12,9 @@
 </template>
 
 <script>
-    // TODO: comments
+    /**
+     * Main component of this application, contains router view
+     */
     export default {
         name: 'App',
         data() {

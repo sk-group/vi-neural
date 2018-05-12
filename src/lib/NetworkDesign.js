@@ -1,3 +1,6 @@
+/**
+ * Network graph to use in NetworkDesign and Result steps
+ */
 export default class NetworkDesign{
     constructor(){
         this.edges = [];
@@ -20,6 +23,9 @@ export default class NetworkDesign{
         }
     }
 
+    /**
+     * Returns neighbor nodes (outputs)
+     */
     getNodeOuts(nodeId){
         let returnArr  = [];
         for(let edge of this.edges){
@@ -30,6 +36,9 @@ export default class NetworkDesign{
         return returnArr;
     }
 
+    /**
+     * Returns neighbor nodes (inputs)
+     */
     getNodeIns(nodeId){
         let returnArr  = [];
         for(let edge of this.edges){

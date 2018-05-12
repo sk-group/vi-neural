@@ -1,3 +1,7 @@
+/**
+ * Example configurations
+ */
+
 module.exports = {
     and: {
         "configuration": {"inputs": 2, "hiddenLayers": [{"count": "1"}], "hopfield": false, "outputs": 1, "iterations": 1000, "speed": 10, "learningRate": 0.5, "activationFunction": "LOGISTIC", "costFunction": "MSE", "minError": 0.005},

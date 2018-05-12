@@ -23,6 +23,9 @@
 <script>
 
     export default {
+        /**
+         * Shows which step the user is on
+         */
         name: 'Progress',
         props: ['appFlow'],
         data () {

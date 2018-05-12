@@ -24,7 +24,7 @@
                 <span class="btn btn-outline-primary btn-sm" @click="loadDummy('vrtule')">Vrtule</span>
                 <span class="btn btn-outline-primary btn-sm" @click="loadDummy('kruh')">Kruh</span>
                 <span class="btn btn-outline-primary btn-sm" @click="loadDummy('mnoziny')">Množiny</span>
-                <span class="btn btn-outline-primary btn-sm" @click="loadDummy('string')">Řetězec jako výstup</span>
+                <span class="btn btn-outline-primary btn-sm" @click="loadDummy('string')">Kategorie jako výstup</span>
                 <span class="btn btn-outline-primary btn-sm" @click="loadDummy('iris')">Iris</span>
             </div>
             <ul class="nav nav-tabs mb-3 justify-content-center">
@@ -50,7 +50,7 @@
                                 <span class="nav-link cursor-pointer" :class="{'active': outputType === 'number'}">Čísla</span>
                             </li>
                             <li class="nav-item" @click="outputType = 'string'">
-                                <span class="nav-link cursor-pointer" :class="{'active': outputType === 'string'}">Řetězce</span>
+                                <span class="nav-link cursor-pointer" :class="{'active': outputType === 'string'}">Kategorie</span>
                             </li>
                         </ul>
                         <template v-if="outputType === 'number'">
@@ -178,6 +178,10 @@
 </template>
 
 <script>
+    /**
+     * Lets you input custom data
+     */
+
     import Axis from './Axis';
     import vueSlider from 'vue-slider-component'
     import Normalizer from '../lib/Normalizer';
@@ -214,6 +218,9 @@
         },
         watch: {
             configuration: {
+                /**
+                 * On configuration change, removes data from this.data, whic should not be there
+                 */
                 handler(val) {
                     if (val.inputs != 2 || val.outputs != 1) {
                         this.setActiveTab('custom');
@@ -238,6 +245,9 @@
                 deep: true
             },
             data: {
+                /**
+                 * On this.data change, change outputType based on the change (string for categories, else number)
+                 */
                 handler() {
                     let type = this.metadata.output[0].type;
                     if (this.outputType !== type) {
@@ -256,6 +266,9 @@
             }
         },
         methods: {
+            /**
+             * Add data row
+             */
             addData() {
                 let newData = {
                     input: [],
@@ -269,6 +282,9 @@
                 }
                 this.data.push(newData);
             },
+            /**
+             * Remove data row
+             */
             removeData(index) {
                 this.data.splice(index, 1);
             },
@@ -279,6 +295,9 @@
 
                 this.tabs[type] = true;
             },
+            /**
+             * Add point to image and to data
+             */
             addPoint(e) {
                 let imageSelect = this.$refs.imageSelect;
                 let output = parseFloat(this.imageSelectOutput);

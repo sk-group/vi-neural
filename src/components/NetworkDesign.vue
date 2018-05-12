@@ -40,14 +40,12 @@
 </template>
 
 <script>
+    /**
+     * Uses vis.js to let user design their own network
+     */
 
     let vis = require('../../node_modules/vis/index');
     let network = null;
-
-    /*let dataGlobal = {
-        nodes: [],
-        edges: []
-    };*/
 
     function destroy() {
         if (network !== null) {
@@ -56,6 +54,9 @@
         }
     }
 
+    /**
+     * Returns random unique ID
+     */
     function getUid() {
         let text = "";
         let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -90,10 +91,14 @@
             this.draw();
         },
         methods: {
+            /**
+             * Generates graph if user click the load or delete button (from the hidden layer inputs)
+             */
             generateGraphStructure(canDraw = true, hiddenLayers = true) {
                 this.dataGlobal.nodes = [];
                 this.dataGlobal.edges = [];
 
+                // input nodes
                 for (let i = 0; i < this.inputs; i++) {
                     this.dataGlobal.nodes.push({
                         id: "input-" + i,
@@ -105,6 +110,7 @@
                     });
                 }
 
+                // output nodes
                 for (let i = 0; i < this.outputs; i++) {
                     this.dataGlobal.nodes.push({
                         id: "output-" + i,
@@ -118,6 +124,7 @@
 
 
                 if (hiddenLayers) {
+                    // creates hidden layers of feed forward network
                     let nodeId = "";
                     for (let it in this.configuration.hiddenLayers) {
 
@@ -171,7 +178,7 @@
             draw() {
                 destroy();
 
-                // create a network
+                // create a vis.js graph editor
                 let container = document.getElementById('mynetwork');
 
                 let options = {
@@ -264,14 +271,23 @@
                     edges: network.body.data.edges.get()
                 });
             },
+            /**
+             * Send graph to parent
+             */
             emmitData(data) {
                 this.$emit('graph-change', data);
             },
+            /**
+             * Add hidden layer input
+             */
             addHiddenLayer() {
                 this.configuration.hiddenLayers.push({
                     count: 2
                 });
             },
+            /**
+             * Remove hidden layer input
+             */
             removeHiddenLayer(index) {
                 this.configuration.hiddenLayers.splice(index, 1);
             }

@@ -9,6 +9,11 @@ let colors = ['red', 'green', 'blue', '#FF6633', '#FFB399', '#FF33FF', '#FFFF99'
     '#FF3380', '#CCCC00', '#66E64D', '#4D80CC', '#9900B3',
     '#E64D66', '#4DB380', '#FF4D4D', '#99E6E6', '#6666FF'];
 
+/**
+ * Returns the color of the data row (either shade of black or color from the array on top for categories)
+ * @param data
+ * @returns {*}
+ */
 export default function getColor(data) {
     let length = data.length;
     if (length === 1) {

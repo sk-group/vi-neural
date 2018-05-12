@@ -1,3 +1,6 @@
+/**
+ * Normalizes data
+ */
 export default class Normalizer {
     constructor(metadata) {
         this.metadata = {};
@@ -8,6 +11,9 @@ export default class Normalizer {
         this.normalizedData = [];
     }
 
+    /**
+     * Set the data to normalize and remove empty data rows
+     */
     setData(data) {
         data = JSON.parse(JSON.stringify(data));
         for (let i = 0; i < data.length; i++) {
@@ -33,6 +39,9 @@ export default class Normalizer {
         }
     }
 
+    /**
+     * Normalize data
+     */
     normalize() {
         if (this.data.length === 0) {
             return;
@@ -48,6 +57,7 @@ export default class Normalizer {
             if (data.input.length > 0) {
                 for (let i = 0; i < this.metadata.input.length; i++) {
                     if (this.metadata.input[i].type === 'number') {
+                        // input minmax
                         let min = this.metadata.input[i].min;
                         let max = this.metadata.input[i].max;
                         let diff = max - min;
@@ -62,6 +72,7 @@ export default class Normalizer {
                         }
                         input.push(minmax);
                     } else if (this.metadata.input[i].type === 'string') {
+                        // input categories
                         for (let binary of this.metadata.input[i].binarized[data.input[i]]) {
                             input.push(binary);
                         }
@@ -71,6 +82,7 @@ export default class Normalizer {
             if (data.output.length > 0) {
                 for (let i = 0; i < this.metadata.output.length; i++) {
                     if (this.metadata.output[i].type === 'number') {
+                        // output minmax
                         let min = this.metadata.output[i].min;
                         let max = this.metadata.output[i].max;
                         let diff = max - min;
@@ -80,6 +92,7 @@ export default class Normalizer {
                         }
                         output.push(minmax);
                     } else if (this.metadata.output[i].type === 'string') {
+                        // output categories
                         for (let binary of this.metadata.output[i].binarized[data.output[i]]) {
                             output.push(binary);
                         }
@@ -93,6 +106,9 @@ export default class Normalizer {
         }
     };
 
+    /**
+     * Normalize just input data (base on metadata)
+     */
     normalizeInput(input) {
         if (!this.metadata) {
             console.error('No metadata to normalize from.');
@@ -107,6 +123,9 @@ export default class Normalizer {
         return this.normalizedData[0].input;
     }
 
+    /**
+     * Denormalize output data (based on metadata)
+     */
     deNormalizeOutput(output) {
         let denormalizedOutput = [];
         if (!this.metadata) {
@@ -219,6 +238,10 @@ export default class Normalizer {
         return yMax;
     }
 
+    /**
+     * Analyzes the data and creates metadata
+     * Metadata contains the mins and maxes for numbers and how were the categories encoded
+     */
     _analyzeMetadata() {
         this.metadata.input = [];
         this.metadata.output = [];
@@ -227,6 +250,7 @@ export default class Normalizer {
         let maxes = this._getMaxes();
         let distinct = this._getDistinctValues();
         for (let i in types.input) {
+            // input metadata
             let metadata = {};
             metadata.type = types.input[i];
             if (metadata.type == 'number') {
@@ -238,6 +262,7 @@ export default class Normalizer {
             this.metadata.input.push(metadata);
         }
         for (let i in types.output) {
+            // output metadata
             let metadata = {};
             metadata.type = types.output[i];
             if (metadata.type == 'number') {
@@ -250,12 +275,16 @@ export default class Normalizer {
         }
     }
 
+    /**
+     * Check and get data types
+     */
     _getTypes() {
         let types = {
             input: [],
             output: []
         };
         for (let i in this.data[0].input) {
+            // get input types
             types.input[i] = 'number';
             for (let data of this.data) {
                 if (typeof(data.input[i]) == 'string') {
@@ -264,6 +293,7 @@ export default class Normalizer {
             }
         }
         for (let i in this.data[0].output) {
+            // get output types
             types.output[i] = 'number';
             for (let data of this.data) {
                 if (typeof(data.output[i]) == 'string') {
@@ -274,12 +304,16 @@ export default class Normalizer {
         return types;
     }
 
+    /**
+     * Get minimal values of data
+     */
     _getMins() {
         let mins = {
             input: [],
             output: []
         };
         for (let i = 0; i < this.data[0].input.length; i++) {
+            // input mins
             mins.input[i] = this.data[0].input[i];
             for (let data of this.data) {
                 if (data.input[i] < mins.input[i]) {
@@ -291,6 +325,7 @@ export default class Normalizer {
             }
         }
         for (let i = 0; i < this.data[0].output.length; i++) {
+            // output mins
             mins.output[i] = this.data[0].output[i];
             for (let data of this.data) {
                 if (data.output[i] < mins.output[i]) {
@@ -304,12 +339,16 @@ export default class Normalizer {
         return mins;
     }
 
+    /**
+     * Get maximal values of data
+     */
     _getMaxes() {
         let maxes = {
             input: [],
             output: []
         };
         for (let i = 0; i < this.data[0].input.length; i++) {
+            // input maxes
             maxes.input[i] = this.data[0].input[i];
             for (let data of this.data) {
                 if (data.input[i] > maxes.input[i]) {
@@ -321,6 +360,7 @@ export default class Normalizer {
             }
         }
         for (let i = 0; i < this.data[0].output.length; i++) {
+            // output maxes
             maxes.output[i] = this.data[0].output[i];
             for (let data of this.data) {
                 if (data.output[i] > maxes.output[i]) {
@@ -334,12 +374,16 @@ export default class Normalizer {
         return maxes;
     }
 
+    /**
+     * Get distinct values to encode categories
+     */
     _getDistinctValues() {
         let distinct = {
             input: [],
             output: []
         };
         for (let i = 0; i < this.data[0].input.length; i++) {
+            // input distinct values
             distinct.input[i] = [];
             for (let data of this.data) {
                 if (distinct.input[i].indexOf(data.input[i].toString()) === -1) {
@@ -348,6 +392,7 @@ export default class Normalizer {
             }
         }
         for (let i = 0; i < this.data[0].output.length; i++) {
+            // output distinct values
             distinct.output[i] = [];
             for (let data of this.data) {
                 if (distinct.output[i].indexOf(data.output[i].toString()) === -1) {
@@ -358,6 +403,9 @@ export default class Normalizer {
         return distinct;
     }
 
+    /**
+     * Encode categories
+     */
     _binarize(distinct) {
         let binarized = {};
         let length = distinct.length;
