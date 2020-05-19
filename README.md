@@ -5,7 +5,7 @@
 School project for class Výpočetní inteligence at University of South Bohemia, Czech Republic.
 
 Kind of works as a graphical UI for the awesome synaptic.js library.\
-http://vi-neural.trams.cz/
+https://sk-group.github.io/vi-neural/
 > Authors:
 >* Pavel Šeps
 >* Ivan Kratochvíl
